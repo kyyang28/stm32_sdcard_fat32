@@ -488,7 +488,7 @@ static void afatfs_initContinue(void)
 	switch (afatfs.initPhase) {
 		case AFATFS_INITIALISATION_READ_MBR:
 			if (afatfs_cacheSector(0, &sector, AFATFS_CACHE_READ | AFATFS_CACHE_DISCARDABLE, 0) == AFATFS_OPERATION_SUCCESS) {
-				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 			}
 			break;
 		
