@@ -432,6 +432,8 @@ bool afatfs_flush(void)
  */
 static int afatfs_allocateCacheSector(uint32_t sectorIndex)
 {
+	int allocateIndex;
+	int emptyIndex = -1, discardableIndex = -1;
 	
 	return 0;			// just for now
 }
