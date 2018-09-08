@@ -1,6 +1,6 @@
 .\objects\main.o: src\quad\target\10-SDCARD\main.c
 .\objects\main.o: src\quad\target\10-SDCARD\system_stm32f4xx.h
-.\objects\main.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\main.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\main.o: .\src\lib\STM32F4xx_StdPeriph_Drivers\inc\stm32f4xx_rcc.h
 .\objects\main.o: .\src\lib\CMSIS\CM4\DeviceSupport\ST\STM32F4xx\stm32f4xx.h
 .\objects\main.o: .\src\lib\CMSIS\CM4\CoreSupport\core_cm4.h
@@ -24,17 +24,17 @@
 .\objects\main.o: .\src\quad\drivers\nvic.h
 .\objects\main.o: .\src\quad\drivers\system.h
 .\objects\main.o: .\src\quad\drivers\led.h
-.\objects\main.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\main.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 .\objects\main.o: .\src\quad\drivers\io.h
 .\objects\main.o: .\src\quad\drivers\iodef.h
 .\objects\main.o: .\src\quad\common\utils.h
-.\objects\main.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+.\objects\main.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\main.o: .\src\quad\drivers\IOTypes.h
 .\objects\main.o: .\src\quad\drivers\io.h
 .\objects\main.o: .\src\quad\target\10-SDCARD\target.h
 .\objects\main.o: .\src\quad\drivers\bus_i2c.h
 .\objects\main.o: .\src\quad\config\feature.h
-.\objects\main.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\main.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 .\objects\main.o: .\src\quad\drivers\io_def_generated.h
 .\objects\main.o: .\src\quad\drivers\iodef.h
 .\objects\main.o: .\src\quad\drivers\ioImpl.h
@@ -69,7 +69,7 @@
 .\objects\main.o: .\src\quad\drivers\rxSerial1Test.h
 .\objects\main.o: .\src\quad\drivers\rxSerial3Test.h
 .\objects\main.o: .\src\quad\drivers\rxSerial6Test.h
-.\objects\main.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\main.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\main.o: .\src\quad\drivers\bitband_i2c_soft.h
 .\objects\main.o: .\src\quad\drivers\bus_spi.h
 .\objects\main.o: .\src\quad\drivers\RCCTypes.h
@@ -78,7 +78,7 @@
 .\objects\main.o: .\src\quad\sensors\compass.h
 .\objects\main.o: .\src\quad\drivers\accgyro_spi_mpu9250.h
 .\objects\main.o: .\src\quad\common\maths.h
-.\objects\main.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\main.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\main.o: .\src\quad\drivers\mpu9250_soft_i2c.h
 .\objects\main.o: .\src\quad\drivers\pwm_output.h
 .\objects\main.o: .\src\quad\drivers\timer.h

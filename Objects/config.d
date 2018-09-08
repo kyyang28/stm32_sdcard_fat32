@@ -1,14 +1,14 @@
 .\objects\config.o: src\quad\fc\config.c
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 .\objects\config.o: .\src\quad\config\configMaster.h
 .\objects\config.o: .\src\quad\drivers\led.h
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 .\objects\config.o: .\src\quad\drivers\io.h
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\config.o: .\src\quad\drivers\iodef.h
 .\objects\config.o: .\src\quad\common\utils.h
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
 .\objects\config.o: .\src\quad\drivers\IOTypes.h
 .\objects\config.o: .\src\quad\drivers\io.h
 .\objects\config.o: .\src\quad\target\10-SDCARD\target.h
@@ -35,7 +35,7 @@
 .\objects\config.o: .\src\lib\CMSIS\CM4\DeviceSupport\ST\STM32F4xx\stm32f4xx_conf.h
 .\objects\config.o: .\src\quad\drivers\bus_i2c.h
 .\objects\config.o: .\src\quad\config\feature.h
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 .\objects\config.o: .\src\quad\drivers\io_def_generated.h
 .\objects\config.o: .\src\quad\drivers\iodef.h
 .\objects\config.o: .\src\quad\drivers\ioImpl.h
@@ -72,5 +72,5 @@
 .\objects\config.o: .\src\quad\target\10-SDCARD\common.h
 .\objects\config.o: .\src\quad\build\debug.h
 .\objects\config.o: .\src\quad\common\maths.h
-.\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\config.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\config.o: src\quad\fc\fc_rc.h

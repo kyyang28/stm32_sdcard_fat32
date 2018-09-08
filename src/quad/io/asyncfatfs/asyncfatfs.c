@@ -435,6 +435,8 @@ static int afatfs_allocateCacheSector(uint32_t sectorIndex)
 	int allocateIndex;
 	int emptyIndex = -1, discardableIndex = -1;
 	
+	uint32_t oldestSyncedSectorLastUse = 0xFFFFFFFF;
+	
 	return 0;			// just for now
 }
 

@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\10-SDCARD.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\10-SDCARD.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sat Sep 08 19:18:05 2018
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sat Sep 08 20:47:47 2018
 <BR><P>
 <H3>Maximum Stack Usage =        276 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -532,7 +532,8 @@ Global Symbols
 <LI><a href="#[f4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rxInit
 <LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;motorInit
 <LI><a href="#[12a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spiInitDevice
-<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_initContinue
+<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 </UL>
 
 <P><STRONG><a name="[89]"></a>__printf</STRONG> (Thumb, 104 bytes, Stack size 24 bytes, __printf.o(.text))
@@ -1342,12 +1343,12 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[c0]"></a>afatfs_poll</STRONG> (Thumb, 28 bytes, Stack size 8 bytes, asyncfatfs.o(i.afatfs_poll))
+<P><STRONG><a name="[c1]"></a>afatfs_poll</STRONG> (Thumb, 28 bytes, Stack size 8 bytes, asyncfatfs.o(i.afatfs_poll))
 <BR><BR>[Stack]<UL><LI>Max Depth = 256 + Unknown Stack Size
 <LI>Call Chain = afatfs_poll &rArr; sdcard_poll &rArr; sdcard_fetchCSD &rArr; sdcard_sendCommand &rArr; spiTransfer &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_initContinue
-<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Calls]<UL><LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_initContinue
+<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 </UL>
 <BR>[Called By]<UL><LI><a href="#[fa]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;taskMainPidLoop
 </UL>
@@ -1798,7 +1799,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[121]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_reset
 </UL>
 
-<P><STRONG><a name="[c1]"></a>sdcard_poll</STRONG> (Thumb, 362 bytes, Stack size 40 bytes, sdcard.o(i.sdcard_poll))
+<P><STRONG><a name="[c2]"></a>sdcard_poll</STRONG> (Thumb, 362 bytes, Stack size 40 bytes, sdcard.o(i.sdcard_poll))
 <BR><BR>[Stack]<UL><LI>Max Depth = 248 + Unknown Stack Size
 <LI>Call Chain = sdcard_poll &rArr; sdcard_fetchCSD &rArr; sdcard_sendCommand &rArr; spiTransfer &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
 </UL>
@@ -1812,7 +1813,7 @@ Global Symbols
 <LI><a href="#[113]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_deselect
 <LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
+<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
 </UL>
 
 <P><STRONG><a name="[ea]"></a>serialInit</STRONG> (Thumb, 38 bytes, Stack size 8 bytes, serial.o(i.serialInit))
@@ -1924,7 +1925,7 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI_Cmd
 </UL>
 <BR>[Called By]<UL><LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_init
-<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 <LI><a href="#[121]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_reset
 </UL>
 
@@ -1948,7 +1949,7 @@ Global Symbols
 <LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[f6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_init
-<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 <LI><a href="#[118]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_sendCommand
 <LI><a href="#[119]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_receiveDataBlock
 </UL>
@@ -1993,7 +1994,7 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[dc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;micros
 <LI><a href="#[136]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;writeMotors
 <LI><a href="#[135]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mixTable
-<LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
+<LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
 </UL>
 <BR>[Called By]<UL><LI><a href="#[81]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -2251,7 +2252,7 @@ Local Symbols
 <BR>[Calls]<UL><LI><a href="#[115]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;IOHi
 <LI><a href="#[114]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spiIsBusBusy
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 <LI><a href="#[116]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_fetchCSD
 </UL>
 
@@ -2265,7 +2266,7 @@ Local Symbols
 <LI><a href="#[119]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_receiveDataBlock
 <LI><a href="#[113]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_deselect
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 </UL>
 
 <P><STRONG><a name="[120]"></a>sdcard_receiveCID</STRONG> (Thumb, 130 bytes, Stack size 24 bytes, sdcard.o(i.sdcard_receiveCID))
@@ -2274,7 +2275,7 @@ Local Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[119]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_receiveDataBlock
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 </UL>
 
 <P><STRONG><a name="[119]"></a>sdcard_receiveDataBlock</STRONG> (Thumb, 62 bytes, Stack size 16 bytes, sdcard.o(i.sdcard_receiveDataBlock))
@@ -2296,13 +2297,13 @@ Local Symbols
 <LI><a href="#[10e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;millis
 <LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_isInserted
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 </UL>
 
 <P><STRONG><a name="[117]"></a>sdcard_select</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, sdcard.o(i.sdcard_select))
 <BR><BR>[Calls]<UL><LI><a href="#[124]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;IOLo
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 <LI><a href="#[116]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_fetchCSD
 </UL>
 
@@ -2314,7 +2315,7 @@ Local Symbols
 <LI><a href="#[11d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spiTransfer
 <LI><a href="#[122]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_waitForNonIdleByte
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
+<BR>[Called By]<UL><LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_poll
 <LI><a href="#[116]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;sdcard_fetchCSD
 </UL>
 
@@ -2337,8 +2338,13 @@ Local Symbols
 <BR>[Called By]<UL><LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;resetProfile
 </UL>
 
-<P><STRONG><a name="[c2]"></a>afatfs_initContinue</STRONG> (Thumb, 42 bytes, Stack size 0 bytes, asyncfatfs.o(i.afatfs_initContinue))
-<BR><BR>[Called By]<UL><LI><a href="#[c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
+<P><STRONG><a name="[c0]"></a>afatfs_initContinue</STRONG> (Thumb, 54 bytes, Stack size 0 bytes, asyncfatfs.o(i.afatfs_initContinue))
+<BR><BR>[Stack]<UL><LI>Max Depth = 128 + Unknown Stack Size
+<LI>Call Chain = afatfs_initContinue &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
+</UL>
+<BR>[Calls]<UL><LI><a href="#[87]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
+</UL>
+<BR>[Called By]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
 </UL>
 
 <P><STRONG><a name="[de]"></a>calculateNonDataDrivenChannel</STRONG> (Thumb, 88 bytes, Stack size 20 bytes, rx.o(i.calculateNonDataDrivenChannel))
