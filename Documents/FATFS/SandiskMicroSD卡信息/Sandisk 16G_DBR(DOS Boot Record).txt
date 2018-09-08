@@ -1,0 +1,425 @@
+Sandisk 16G class 4 HC microSD card (Boot sector (DBR) of FAT32)
+
++-------------------------------------------------------------------------+
++							 Boot sector描述							  +
++-------------------------------------------------------------------------+
+EB 58 90 4D 53 44 4F 53 35 2E 30 00 02 40 56 02 02 00 00 00 00 F8 00 00 3F 00 FF 00 00 20 00 00 00 AC DA 01 D5 0E 00 00 00 00 00 00 02 00 00 00 01 00 06 00 00 00 00 00 00 00 00 00 00 00 00 00 80 00 29 3F 94 39 0E 4E 4F 20 4E 41 4D 45 20 20 20 20 46 41 54 33 32 20 20 20 33 C9 8E D1 BC F4 7B 8E C1 8E D9 BD 00 7C 88 56 40 88 4E 02 8A 56 40 B4 41 BB AA 55 CD 13 72 10 81 FB 55 AA 75 0A F6 C1 01 74 05 FE 46 02 EB 2D 8A 56 40 B4 08 CD 13 73 05 B9 FF FF 8A F1 66 0F B6 C6 40 66 0F B6 D1 80 E2 3F F7 E2 86 CD C0 ED 06 41 66 0F B7 C9 66 F7 E1 66 89 46 F8 83 7E 16 00 75 39 83 7E 2A 00 77 33 66 8B 46 1C 66 83 C0 0C BB 00 80 B9 01 00 E8 2C 00 E9 A8 03 A1 F8 7D 80 C4 7C 8B F0 AC 84 C0 74 17 3C FF 74 09 B4 0E BB 07 00 CD 10 EB EE A1 FA 7D EB E4 A1 7D 80 EB DF 98 CD 16 CD 19 66 60 80 7E 02 00 0F 84 20 00 66 6A 00 66 50 06 53 66 68 10 00 01 00 B4 42 8A 56 40 8B F4 CD 13 66 58 66 58 66 58 66 58 EB 33 66 3B 46 F8 72 03 F9 EB 2A 66 33 D2 66 0F B7 4E 18 66 F7 F1 FE C2 8A CA 66 8B D0 66 C1 EA 10 F7 76 1A 86 D6 8A 56 40 8A E8 C0 E4 06 0A CC B8 01 02 CD 13 66 61 0F 82 74 FF 81 C3 00 02 66 40 49 75 94 C3 42 4F 4F 54 4D 47 52 20 20 20 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0D 0A 44 69 73 6B 20 65 72 72 6F 72 FF 0D 0A 50 72 65 73 73 20 61 6E 79 20 6B 65 79 20 74 6F 20 72 65 73 74 61 72 74 0D 0A 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 AC 01 B9 01 00 00 55 AA
+
+FAT32 uses LITTLE endian
+The correct value uses BIG endian
+
+jmpBoot(3 bytes)： 			The real value (EB 58 90)
+							The correct value (90 58 EB)
+
+OEMName(8 bytes):			The real value (4D 53 44 4F 53 35 2E 30)
+						    				M  S  D  O  S  5  .  0
+
+BytesPerSec(2 bytes): 		The real value (00 02)
+							The correct value (02 00), 0x0200 = 512 bytes
+
+SecPerClus(1 byte):			The real value (40)
+							The correct value (40), 0x40 = 64
+
+RsvdSecCnt(2 bytes):		The real value (56 02)
+							The correct value (02 56), 0x0256 = 598
+
+NumFATs(1 byte):			The real value (02)
+							The correct value (02), 0x02 = 2, FAT1, FAT2
+
+RootEntCnt(2 bytes):		The real value (00 00)
+							The correct value (00 00), 0x0, FAT32 sets as ZERO
+
+TotSec16(2 bytes):			The real value (00 00)
+							The correct value (00 00), 0x0, FAT32 sets as ZERO
+
+Media(1 byte):				The real value (F8)
+							The correct value (F8), 0xF8 = 248
+
+FATSz16(2 bytes):			The real value (00 00)
+							The correct value (00 00), 0x00
+
+SecPerTrk(2 bytes):			The real value (3F 00)
+							The correct value (00 3F), 0x003F = 63
+
+NumHeads(2 bytes):			The real value (FF 00)
+							The correct value (00 FF), 0x00FF = 255
+
+HiddSec(4 bytes):			The real value (00 20 00 00)
+							The correct value (00 00 20 00), 0x00002000 = 8192
+
+TotSec32(4 bytes):			The real value (00 AC DA 01)
+							The correct value (01 DA AC 00), 0x01DAAC00 = 31108096
+
+FATSz32(4 bytes):			The real value (D5 0E 00 00)
+							The correct value (00 00 0E D5), 0x00000ED5 = 3797
+
+ExtFlags(2 bytes):			The real value (00 00)
+							The correct value (00 00), 0x0, ONLY for FAT32
+
+FSVer(2 bytes):				The real value (00 00)
+							The correct value (00 00), 0x0, ONLY for FAT32
+
+RootClus(4 bytes):			The real value (02 00 00 00)
+							The correct value (00 00 00 02), 0x02 = 2
+
+FSInfo(2 bytes):			The real value (01 00)
+							The correct value (00 01), 0x01 = 1
+
+BkBootSec(2 bytes):			The real value (06 00)
+							The correct value (00 06), 0x06 = 6, Normally this value is 6
+
+Reserved:
+
+DrvNum:
+
+Reserved1:
+
+BootSig:
+
+VolID:
+
+FilSysType:
+
+FilSysType1:
+
+RootDirSectors = ((BPB_RootEntCnt * 32) + (BPB_BytsPerSec – 1)) / BPB_BytsPerSec
+			   = ((0 * 32) + (512 - 1)) / 512
+			   = (0 + 511) / 512
+			   = 511 / 512
+			   = 0
+
+FATSz = BPB_FATSz32 = 3797
+
+FirstDataSector = BPB_ResvdSecCnt + (BPB_NumFATs * FATSz) + RootDirSectors
+				= 598 + (2 * 3797) + 0
+				= 598 + 7594 + 0
+				= 8192
+
+FirstSectorNumberofCluster = ((N – 2) * BPB_SecPerClus) + FirstDataSector
+						   = ((N - 2) * 64) + 8192
+		when N = 2, FirstSectorNumberofCluster = ((2 - 2) * 64) + 8192
+											   = 8192
+		when N = 3, FirstSectorNumberofCluster = ((3 - 2) * 64) + 8192
+											   = 64 + 8192
+											   = 8256
+		when N = 4, FirstSectorNumberofCluster = ((4 - 2) * 64) + 8192
+											   = 2 * 64 + 8192
+											   = 128 + 8256
+											   = 8384
+
+RootDirSectors = ((BPB_RootEntCnt * 32) + (BPB_BytsPerSec – 1)) / BPB_BytsPerSec
+			   = ((0 * 32) + (512 - 1)) / 512
+			   = (0 + 511) / 512
+			   = 511 / 512
+			   = 0 (Rounds up)
+
+FATSz = BPB_FATSz32 = 3797
+TotSec = BPB_TotSec32 = 31108096
+
+DataSec = TotSec – (BPB_ResvdSecCnt + (BPB_NumFATs * FATSz) + RootDirSectors)
+		= 31108096 - (598 + (2 * 3797) + 0)
+		= 31108096 - (598 + 7594 + 0)
+		= 31108096 - 8192
+		= 31099904
+
+/*
+If(CountofClusters < 4085) {
+	/* Volume is FAT12 */
+} else if(CountofClusters < 65525) {
+	/* Volume is FAT16 */
+} else {
+	/* Volume is FAT32 */
+}
+*/
+CountofClusters = DataSec / BPB_SecPerClus
+				= 31099904 / 64
+				= 485936 (Rounds down)
+
+As CountofClusters = 485936 >= 65525, Volume is FAT32
+
++-------------------------------------------------------------------------+
++							 Boot sector描述							  +
++-------------------------------------------------------------------------+
+
+
++-------------------------------------------------------------------------+
++							 Root directory描述							  +
++-------------------------------------------------------------------------+
+53 54 4D 33 32 20 20 20 20 20 20 08 00 00 00 00 00 00 00 00 00 00 E3 61 1E 4D 00 00 00 00 00 00 42 20 00 49 00 6E 00 66 00 6F 00 0F 00 72 72 00 6D 00 61 00 74 00 69 00 6F 00 00 00 6E 00 00 00 01 53 00 79 00 73 00 74 00 65 00 0F 00 72 6D 00 20 00 56 00 6F 00 6C 00 75 00 00 00 6D 00 65 00 53 59 53 54 45 4D 7E 31 20 20 20 16 00 23 E2 61 1E 4D 1E 4D 00 00 E3 61 1E 4D 03 00 00 00 00 00 54 45 53 54 20 20 20 20 54 58 54 20 10 7F 96 60 1C 4D 1E 4D 00 00 9D 60 1C 4D 06 00 12 00 00 00 54 45 53 54 31 20 20 20 54 58 54 20 10 3B CA 59 1E 4D 1E 4D 00 00 B7 5B 1E 4D 07 00 7D 86 06 00 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+
+File name(0-7):		53 54 4D 33 32  20    20     20
+					S  T  M  3  2  space space  space
+File name extension(8-10):  20     20     20
+						   space  space  space
+
+Property bytes:		08
+				  label
+
+
++-------------------------------------------------------------------------+
++							  TEXT.TXT文件描述							  +
++-------------------------------------------------------------------------+
+文件名(0-7): 					54 45 53 54 20 20 20 20
+								T  E  S  T              
+
+文件扩展类型(8-10):				54 58 54
+								T  X  T
+
+属性字节(11):					20
+
+保留(12):						10
+
+创建时间的10毫秒位(13):			7F (127)
+
+文件创建时间(14-15):			96 60 (big endian)
+								60 96 (little endian): 24726
+
+Bits 0–4: 2-second count, valid value range 0–29 inclusive (0 – 58 seconds).
+Bits 5–10: Minutes, valid value range 0–59 inclusive.
+Bits 11–15: Hours, valid value range 0–23 inclusive.
+
+								(24726)_10 = (110000010010110)_2
+
+								Hour    Minutes  2-second
+								01100   000100    10110
+								 12       4         22
+
+								Hour: 12
+								Minutes: 4
+								Seconds: 22 / 2 = 11
+
+								文件创建时间为: 12:04:11
+
+文件创建日期(16-17):			1C 4D (big endian)
+								4D 1C (little endian): 19740
+
+Bits 0–4: Day of month, valid value range 1-31 inclusive.
+Bits 5–8: Month of year, 1 = January, valid value range 1–12 inclusive.
+Bits 9–15: Count of years from 1980, valid value range 0–127 inclusive (1980–2107)
+
+								(19740)_10 = (100110100011100)_2
+
+								 Year	   Month    Day
+								0100110    1000    11100
+								  38         8       28
+
+								Year: 1980 + 38 = 2018
+								Month: 8
+								Day: 28
+
+								文件创建于2018/08/28
+
+
+文件最后访问日期(18-19):		1E 4D (big endian)
+								4D 1E (little endian): 16414
+
+Bits 0–4: Day of month, valid value range 1-31 inclusive.
+Bits 5–8: Month of year, 1 = January, valid value range 1–12 inclusive.
+Bits 9–15: Count of years from 1980, valid value range 0–127 inclusive (1980–2107)
+
+								(16414)_10 = (100000000011110)_2
+
+								 Year	   Month    Day
+								0100000    0000    11110
+								  32         0       30
+
+								Year: 1980 + 32 = 2012
+								Month: 0
+								Day: 30
+
+								文件最后访问日期2012/00/30
+
+
+文件起始簇号的高16位(20-21):	00 00
+
+文件最近的修改时间(22-23):		9D 60 (big endian)
+								60 9D (little endian): 24733
+
+Bits 0–4: 2-second count, valid value range 0–29 inclusive (0 – 58 seconds).
+Bits 5–10: Minutes, valid value range 0–59 inclusive.
+Bits 11–15: Hours, valid value range 0–23 inclusive.
+
+								(24733)_10 = (110000010011101)_2
+
+								Hour    Minutes  2-second
+								01100   000100    11101
+								 12       4         29
+
+								Hour: 12
+								Minutes: 4
+								Seconds: 29 / 2 = 14
+
+								文件最近修改的时间为: 12:04:14
+
+文件最近的修改日期(24-25):		1C 4D (big endian)
+								4D 1C (little endian)
+
+Bits 0–4: Day of month, valid value range 1-31 inclusive.
+Bits 5–8: Month of year, 1 = January, valid value range 1–12 inclusive.
+Bits 9–15: Count of years from 1980, valid value range 0–127 inclusive (1980–2107)
+
+								(19740)_10 = (100110100011100)_2
+
+								 Year	   Month    Day
+								0100110    1000    11100
+								  38         8       28
+
+								Year: 1980 + 38 = 2018
+								Month: 8
+								Day: 28
+
+								文件最近的修改日期为2018/08/28
+
+文件起始簇号的低16位(26-27):	06 00 (big endian)
+								00 06 (little endian)
+
+文件起始簇号(20-21,26-27):		0x00000006 = 6
+
+文件的长度(28-31)：				12 00 00 00 (0x12000000), big endian
+								00 00 00 12 (0x00000012 = 18), 18 characters
++-------------------------------------------------------------------------+
++							  TEXT.TXT文件描述							  +
++-------------------------------------------------------------------------+
+
+
++-------------------------------------------------------------------------+
++							  TEXT1.TXT文件描述							  +
++-------------------------------------------------------------------------+
+文件名(0-7): 					54 45 53 54 31 20 20 20
+								T  E  S  T  1            
+
+文件扩展类型(8-10):				54 58 54
+								T  X  T
+
+属性字节(11):					20
+
+保留(12):						10
+
+创建时间的10毫秒位(13):			3B (59)
+
+文件创建时间(14-15):			CA 59 (big endian)
+								59 CA (little endian): 22986
+
+Bits 0–4: 2-second count, valid value range 0–29 inclusive (0 – 58 seconds).
+Bits 5–10: Minutes, valid value range 0–59 inclusive.
+Bits 11–15: Hours, valid value range 0–23 inclusive.
+
+								(22986)_10 = (101100111001010)_2
+
+								Hour    Minutes  2-second
+								01011   001110    01010
+								 11       14        10
+
+								Hour: 11
+								Minutes: 14
+								Seconds: 10 / 2 = 5
+
+								文件创建时间为: 11:14:05
+
+文件创建日期(16-17):			1E 4D (big endian)
+								4D 1E (little endian): 19742
+
+Bits 0–4: Day of month, valid value range 1-31 inclusive.
+Bits 5–8: Month of year, 1 = January, valid value range 1–12 inclusive.
+Bits 9–15: Count of years from 1980, valid value range 0–127 inclusive (1980–2107)
+
+								(19742)_10 = (100110100011110)_2
+
+								 Year	   Month    Day
+								0100110    1000    11110
+								  38         8       30
+
+								Year: 1980 + 38 = 2018
+								Month: 8
+								Day: 30
+
+								文件创建日期为2018/08/30
+
+
+文件最后访问日期(18-19):		1E 4D (big endian)
+								4D 1E (little endian): 19742
+
+Bits 0–4: Day of month, valid value range 1-31 inclusive.
+Bits 5–8: Month of year, 1 = January, valid value range 1–12 inclusive.
+Bits 9–15: Count of years from 1980, valid value range 0–127 inclusive (1980–2107)
+
+								(19742)_10 = (100110100011110)_2
+
+								 Year	   Month    Day
+								0100110    1000    11110
+								  38         8       30
+
+								Year: 1980 + 38 = 2018
+								Month: 8
+								Day: 30
+
+								文件最近的访问日期为2018/08/30
+
+文件起始簇号的高16位(20-21):	00 00
+
+文件最近的修改时间(22-23):		B7 5B (big endian)
+								5B B7 (little endian): 23479
+
+Bits 0–4: 2-second count, valid value range 0–29 inclusive (0 – 58 seconds).
+Bits 5–10: Minutes, valid value range 0–59 inclusive.
+Bits 11–15: Hours, valid value range 0–23 inclusive.
+
+								(23479)_10 = (101101110110111)_2
+
+								Hour    Minutes  2-second
+								01011   011101    10111
+								 11       29        23
+
+								Hour: 11
+								Minutes: 29
+								Seconds: 23 / 2 = 11
+
+								文件最近修改的时间为: 11:29:11
+
+
+文件最近的修改日期(24-25):		1E 4D (big endian)
+								4D 1E (little endian): 19742
+
+Bits 0–4: Day of month, valid value range 1-31 inclusive.
+Bits 5–8: Month of year, 1 = January, valid value range 1–12 inclusive.
+Bits 9–15: Count of years from 1980, valid value range 0–127 inclusive (1980–2107)
+
+								(19742)_10 = (100110100011110)_2
+
+								 Year	   Month    Day
+								0100110    1000    11110
+								  38         8       30
+
+								Year: 1980 + 38 = 2018
+								Month: 8
+								Day: 30
+
+								文件最近的修改日期为2018/08/30
+
+
+文件起始簇号的低16位(26-27):	07 00 (big endian)
+								00 07 (little endian)
+
+文件起始簇号(20-21,26-27):		0x00000007 = 7
+
+文件的长度(28-31)：				7D 86 06 00 (0x7D860600), big endian
+								00 06 86 7D (0x0006867D = 427645), 427645 characters
++-------------------------------------------------------------------------+
++							  TEXT1.TXT文件描述							  +
++-------------------------------------------------------------------------+
+
++-------------------------------------------------------------------------+
++							 Root directory描述							  +
++-------------------------------------------------------------------------+
+
+
++-------------------------------------------------------------------------+
++							     FAT1描述							  	  +
++-------------------------------------------------------------------------+
+F8 FF FF 0F FF FF FF FF FF FF FF 0F FF FF FF 0F FF FF FF 0F FF FF FF 0F FF FF FF 0F 08 00 00 00 09 00 00 00 0A 00 00 00 0B 00 00 00 0C 00 00 00 0D 00 00 00 0E 00 00 00 0F 00 00 00 10 00 00 00 11 00 00 00 12 00 00 00 13 00 00 00 14 00 00 00 FF FF FF 0F
+
+
++-------------------------------------------------------------------------+
++							     FAT2描述							  	  +
++-------------------------------------------------------------------------+
+F8 FF FF 0F FF FF FF FF FF FF FF 0F FF FF FF 0F FF FF FF 0F FF FF FF 0F FF FF FF 0F 08 00 00 00 09 00 00 00 0A 00 00 00 0B 00 00 00 0C 00 00 00 0D 00 00 00 0E 00 00 00 0F 00 00 00 10 00 00 00 11 00 00 00 12 00 00 00 13 00 00 00 14 00 00 00 FF FF FF 0F
