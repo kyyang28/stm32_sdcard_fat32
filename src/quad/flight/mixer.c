@@ -84,7 +84,7 @@ void writeMotors(void)
 		}
 	}
 	
-	pwmCompleteMotorUpdate(motorCount);		// TODO: UNCOMMENT this line later
+	pwmCompleteMotorUpdate(motorCount);
 }
 
 bool isMotorProtocolDshot(void)

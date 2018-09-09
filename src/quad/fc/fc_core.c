@@ -36,7 +36,7 @@ static void subTaskMotorUpdate(void)
 	
 	if (motorControlEnable) {
 //		printf("motorControlEnable: %s, %d\r\n", __FUNCTION__, __LINE__);
-		writeMotors();				// uncomment pwmCompleteMotorUpdate() function later in the writeMotors() function
+		writeMotors();
 	}
 }
 

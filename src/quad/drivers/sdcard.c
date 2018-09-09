@@ -285,6 +285,8 @@ static bool sdcard_validateInterfaceCondition(void)
 	/* (SDCARD_VOLTAGE_ACCEPTED_2_7_to_3_6 << 8) | SDCARD_IF_COND_CHECK_PATTERN = 0x1 << 8 | 0xAB = 0x100 | 0xAB = 0x1AB */
 	uint8_t status = sdcard_sendCommand(SDCARD_COMMAND_SEND_IF_COND, (SDCARD_VOLTAGE_ACCEPTED_2_7_to_3_6 << 8) | SDCARD_IF_COND_CHECK_PATTERN);
 	
+//	printf("status: 0x%x\r\n", status);		// status = 0x01 (SDCARD_R1_STATUS_BIT_IDLE)
+	
 	/* Do not deselect the card right away, because we'll want to read the rest of its reply if it's a V2 card */
 	
 	if (status == (SDCARD_R1_STATUS_BIT_ILLEGAL_COMMAND | SDCARD_R1_STATUS_BIT_IDLE)) {
@@ -292,6 +294,12 @@ static bool sdcard_validateInterfaceCondition(void)
 		sdcard.version = 1;
 	}else if (status == SDCARD_R1_STATUS_BIT_IDLE) {
 		spiTransfer(SDCARD_SPI_INSTANCE, ifCondReply, NULL, sizeof(ifCondReply));
+
+		/* CMD8 reponse is 0x000001AB */
+		printf("ifCondReply[0]: 0x%x\r\n", ifCondReply[0]);		// ifCondReply[0] = 0x00
+		printf("ifCondReply[1]: 0x%x\r\n", ifCondReply[1]);		// ifCondReply[1] = 0x00
+		printf("ifCondReply[2]: 0x%x\r\n", ifCondReply[2]);		// ifCondReply[2] = 0x01
+		printf("ifCondReply[3]: 0x%x\r\n", ifCondReply[3]);		// ifCondReply[3] = 0xAB
 		
         /*
          * We don't bother to validate the SDCard's operating voltage range since the spec requires it to accept our
