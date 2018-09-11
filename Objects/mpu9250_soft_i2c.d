@@ -1,8 +1,8 @@
 .\objects\mpu9250_soft_i2c.o: src\quad\drivers\mpu9250_soft_i2c.c
-.\objects\mpu9250_soft_i2c.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\mpu9250_soft_i2c.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\mpu9250_soft_i2c.o: src\quad\drivers\bus_i2c.h
-.\objects\mpu9250_soft_i2c.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
-.\objects\mpu9250_soft_i2c.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
+.\objects\mpu9250_soft_i2c.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\mpu9250_soft_i2c.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 .\objects\mpu9250_soft_i2c.o: src\quad\drivers\mpu9250_soft_i2c.h
 .\objects\mpu9250_soft_i2c.o: .\src\quad\target\10-SDCARD\target.h
 .\objects\mpu9250_soft_i2c.o: .\src\lib\STM32F4xx_StdPeriph_Drivers\inc\stm32f4xx_exti.h
@@ -27,6 +27,6 @@
 .\objects\mpu9250_soft_i2c.o: .\src\lib\STM32F4xx_StdPeriph_Drivers\inc\misc.h
 .\objects\mpu9250_soft_i2c.o: .\src\lib\CMSIS\CM4\DeviceSupport\ST\STM32F4xx\stm32f4xx_conf.h
 .\objects\mpu9250_soft_i2c.o: .\src\quad\config\feature.h
-.\objects\mpu9250_soft_i2c.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\mpu9250_soft_i2c.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 .\objects\mpu9250_soft_i2c.o: src\quad\drivers\system.h
 .\objects\mpu9250_soft_i2c.o: src\quad\drivers\rxSerial3Test.h

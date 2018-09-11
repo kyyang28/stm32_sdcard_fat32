@@ -731,6 +731,8 @@ static void afatfs_initContinue(void)
 //				printf("sector[AFATFS_SECTOR_SIZE - 1]: 0x%x, %s, %s, %d\r\n", sector[AFATFS_SECTOR_SIZE - 1], __FILE__, __FUNCTION__, __LINE__);	// 0xAA
 				if (afatfs_parseMBR(sector)) {
 					printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+					
+					
 				}
 			}
 			break;

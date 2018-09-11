@@ -50,8 +50,7 @@
 #define USE_UART3
 #ifdef USE_UART3
 #define UART3_RX_PIN        	PB11		// share with SOFT_I2C_SDA, connect to ORANGE cable
-#define UART3_TX_PIN        	PB10		// share with SPI2 SCK line and SOFT_I2C_SCL,
-											// connect to YELLOW cable
+#define UART3_TX_PIN        	PB10		// share with SPI2 SCK line and SOFT_I2C_SCL, connect to YELLOW cable
 #endif
 
 #define USE_UART6

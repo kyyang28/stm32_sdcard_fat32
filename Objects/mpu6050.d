@@ -1,6 +1,6 @@
 .\objects\mpu6050.o: src\quad\drivers\mpu6050.c
 .\objects\mpu6050.o: src\quad\drivers\mpu6050.h
-.\objects\mpu6050.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\mpu6050.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\mpu6050.o: src\quad\drivers\bitband_i2c_soft.h
 .\objects\mpu6050.o: .\src\lib\CMSIS\CM4\DeviceSupport\ST\STM32F4xx\stm32f4xx.h
 .\objects\mpu6050.o: .\src\lib\CMSIS\CM4\CoreSupport\core_cm4.h
@@ -24,4 +24,4 @@
 .\objects\mpu6050.o: .\src\lib\CMSIS\CM4\DeviceSupport\ST\STM32F4xx\stm32f4xx_conf.h
 .\objects\mpu6050.o: src\quad\drivers\system.h
 .\objects\mpu6050.o: src\quad\drivers\rxSerial3Test.h
-.\objects\mpu6050.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\mpu6050.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
