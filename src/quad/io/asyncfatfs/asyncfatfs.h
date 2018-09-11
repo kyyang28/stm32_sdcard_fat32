@@ -19,9 +19,9 @@ typedef struct afatfsDirEntryPointer_t {
 }afatfsDirEntryPointer_t;
 
 typedef enum {
-	AFATFS_OPERATION_IN_PROGRESS,
-	AFATFS_OPERATION_SUCCESS,
-	AFATFS_OPERATION_FAILURE
+	AFATFS_OPERATION_IN_PROGRESS,		// 0
+	AFATFS_OPERATION_SUCCESS,			// 1
+	AFATFS_OPERATION_FAILURE			// 2
 }afatfsOperationStatus_e;
 
 typedef enum {

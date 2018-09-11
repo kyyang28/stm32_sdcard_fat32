@@ -43,6 +43,8 @@ bool sdcard_isInserted(void);
 void sdcardInsertionDetectInit(void);
 void sdcard_init(bool useDMA);
 
+bool sdcard_readBlock(uint32_t blockIndex, uint8_t *buffer, sdcard_operationCompleteCallback_c callback, uint32_t callbackData);
+
 bool sdcard_poll(void);
 
 #endif	// __SDCARD_H

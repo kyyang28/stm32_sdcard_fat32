@@ -3,6 +3,7 @@
 #include "sdcard.h"				// including stdint.h, stdbool.h
 #include "asyncfatfs.h"
 #include "fat_standard.h"
+#include "maths.h"				// MIN, MAX, etc
 
 /* 	FAT filesystems are allowed to differ from these parameters, but we choose not to support those
  *	weird filesystems
@@ -13,6 +14,12 @@
 #define AFATFS_NUM_CACHE_SECTORS		8
 
 #define AFATFS_MAX_OPEN_FILES			3
+
+/*
+ * How many blocks will we write in a row before we bother using the SDcard's multiple block write method?
+ * If this define is omitted, this disables multi-block write.
+ */
+#define AFATFS_MIN_MULTIPLE_BLOCK_WRITE_COUNT		4
 
 /* 	Turn the largest free block on the disk into one contiguous file 
  *	for efficient fragment-free allocation
@@ -74,11 +81,11 @@ typedef struct afatfsFreeSpaceFAT_t {
 }afatfsFreeSpaceFAT_t;
 
 typedef enum {
-	AFATFS_CACHE_STATE_EMPTY,
-	AFATFS_CACHE_STATE_IN_SYNC,
-	AFATFS_CACHE_STATE_READING,
-	AFATFS_CACHE_STATE_WRITING,
-	AFATFS_CACHE_STATE_DIRTY
+	AFATFS_CACHE_STATE_EMPTY,			// 0
+	AFATFS_CACHE_STATE_IN_SYNC,			// 1
+	AFATFS_CACHE_STATE_READING,			// 2
+	AFATFS_CACHE_STATE_WRITING,			// 3
+	AFATFS_CACHE_STATE_DIRTY			// 4
 }afatfsCacheBlockState_e;
 
 typedef struct afatfsCacheBlockDescriptor_t {
@@ -389,6 +396,12 @@ typedef struct afatfs_t {
 
 static afatfs_t afatfs;
 
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +--------------------------------------------------------- FUNCTIONS ----------------------------------------------------------+ */
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+
 /**
  * Check for conditions that should always be true (and if otherwise mean a bug or a corrupt filesystem).
  *
@@ -403,8 +416,9 @@ static bool afatfs_assert(bool condition)
 		if (afatfs.lastError == AFATFS_ERROR_NONE) {
 			afatfs.lastError = AFATFS_ERROR_GENERIC;
 		}
-		
+
 		afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_FATAL;
+		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);		
 	}
 	
 	return condition;
@@ -418,6 +432,23 @@ bool afatfs_flush(void)
 	return true;
 }
 
+/* Initialise the cache sector of the FAT FS */
+static void afatfs_cacheSectorInit(afatfsCacheBlockDescriptor_t *descriptor, uint32_t sectorIndex, bool locked)
+{
+	descriptor->sectorIndex = sectorIndex;
+	
+	descriptor->accessTimestamp = descriptor->writeTimestamp = ++afatfs.cacheTimer;
+	
+	descriptor->consecutiveEraseBlockCount = 0;
+	
+	descriptor->state = AFATFS_CACHE_STATE_EMPTY;
+	
+	descriptor->locked = locked;
+	
+	descriptor->retainCount = 0;
+	
+	descriptor->discardable = 0;
+}
 
 /**
  * Find or allocate a cache sector for the given sector index on disk. Returns a block which matches one of these
@@ -436,8 +467,130 @@ static int afatfs_allocateCacheSector(uint32_t sectorIndex)
 	int emptyIndex = -1, discardableIndex = -1;
 	
 	uint32_t oldestSyncedSectorLastUse = 0xFFFFFFFF;
+	int oldestSyncedSectorIndex = -1;
 	
-	return 0;			// just for now
+//	printf("afatfs.numClusters: %u\r\n", afatfs.numClusters);		// afatfs.numClusters = 0
+
+	if (
+		!afatfs_assert(
+			afatfs.numClusters == 0	// we are unable to check sector bounds during startup since we haven't read volume label yet.
+			|| sectorIndex < afatfs.clusterStartSector + afatfs.numClusters * afatfs.sectorsPerCluster
+		)
+	) {
+//		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+		return -1;
+	}
+	
+	/* AFATFS_NUM_CACHE_SECTORS = 8 */
+	for (int i = 0; i < AFATFS_NUM_CACHE_SECTORS; i++) {
+		/* sectorIndex = physicalSectorIndex */
+		if (afatfs.cacheDescriptor[i].sectorIndex == sectorIndex) {
+			/*
+			 * If the sector is actually empty then do a complete re-init of it just like the standard
+			 * empty case. (Sectors marked as empty should be treated as if they don't have a block index assigned)
+			 */
+			if (afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_EMPTY) {
+				emptyIndex = i;
+				break;
+			}
+			
+			/* Bump the last access time */
+			afatfs.cacheDescriptor[i].accessTimestamp = ++afatfs.cacheTimer;
+			return i;
+		}
+		
+		switch (afatfs.cacheDescriptor[i].state) {
+			case AFATFS_CACHE_STATE_EMPTY:
+				emptyIndex = i;
+				break;
+			
+			case AFATFS_CACHE_STATE_IN_SYNC:
+				/* is this a synced sector that we could evict from the cache? */
+				if (!afatfs.cacheDescriptor[i].locked && afatfs.cacheDescriptor[i].retainCount == 0) {
+					/* discardable is TRUE */
+					if (afatfs.cacheDescriptor[i].discardable) {
+						discardableIndex = i;
+					} else if (afatfs.cacheDescriptor[i].accessTimestamp < oldestSyncedSectorLastUse) {
+						/* oldestSyncedSectorLastUse = 0xFFFFFFFF
+						 * 
+						 * This is older than last block we decided to evict, so evict this one in preference
+						 */
+						oldestSyncedSectorLastUse = afatfs.cacheDescriptor[i].accessTimestamp;
+						oldestSyncedSectorIndex = i;
+					}
+				}
+				break;
+			
+			default:
+				;
+		}
+	}
+	
+//	printf("emptyIndex: %d\r\n", emptyIndex);								// emptyIndex = 0
+//	printf("discardableIndex: %d\r\n", discardableIndex);					// discardableIndex = -1
+//	printf("oldestSyncedSectorIndex: %d\r\n", oldestSyncedSectorIndex);		// oldestSyncedSectorIndex = -1
+	
+	if (emptyIndex > -1) {
+		allocateIndex = emptyIndex;
+	} else if (discardableIndex > -1) {
+		allocateIndex = discardableIndex;
+	} else if (oldestSyncedSectorIndex > -1) {
+		allocateIndex = oldestSyncedSectorIndex;
+	} else {
+		allocateIndex = -1;
+	}
+	
+	if (allocateIndex > -1) {
+		/* locked parameter = false */
+		afatfs_cacheSectorInit(&afatfs.cacheDescriptor[allocateIndex], sectorIndex, false);
+	}
+	
+	return allocateIndex;
+}
+
+/**
+ * Get the buffer memory for the cache entry of the given index.
+ */
+static uint8_t *afatfs_cacheSectorGetMemory(int cacheEntryIndex)
+{
+	return afatfs.cache + cacheEntryIndex * AFATFS_SECTOR_SIZE;		// AFATFS_SECTOR_SIZE = 512
+}
+
+/**
+ * Called by the SD card driver when one of our read operations completes
+ */
+static void afatfs_sdcardReadComplete(sdcardBlockOperation_e operation, uint32_t sectorIndex, uint8_t *buffer, uint32_t callbackData)
+{
+	(void) operation;
+	(void) callbackData;
+	
+	for (int i = 0; i < AFATFS_NUM_CACHE_SECTORS; i++) {
+		if (afatfs.cacheDescriptor[i].state != AFATFS_CACHE_STATE_EMPTY
+			&& afatfs.cacheDescriptor[i].sectorIndex == sectorIndex) {
+			if (buffer == NULL) {
+				/* Read failed, mark the sector as empty and whoever asked for it will ask for it again later to retry */
+				afatfs.cacheDescriptor[i].state = AFATFS_CACHE_STATE_EMPTY;
+//				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			} else {
+//				printf("afatfs_cacheSectorGetMemory(i) == buffer: %d, %s, %s, %d\r\n", afatfs_cacheSectorGetMemory(i) == buffer, __FILE__, __FUNCTION__, __LINE__);
+//				printf("afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_READING: %d, %s, %s, %d\r\n", afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_READING, __FILE__, __FUNCTION__, __LINE__);
+				afatfs_assert(afatfs_cacheSectorGetMemory(i) == buffer && afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_READING);
+				afatfs.cacheDescriptor[i].state = AFATFS_CACHE_STATE_IN_SYNC;
+//				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			}
+			
+			break;
+		}
+	}
+}
+
+static void afatfs_cacheSectorMarkDirty(afatfsCacheBlockDescriptor_t *descriptor)
+{
+	if (descriptor->state != AFATFS_CACHE_STATE_DIRTY) {
+		descriptor->writeTimestamp = ++afatfs.cacheTimer;
+		descriptor->state = AFATFS_CACHE_STATE_DIRTY;
+		afatfs.cacheDirtyEntries++;
+	}
 }
 
 /**
@@ -461,22 +614,103 @@ static afatfsOperationStatus_e afatfs_cacheSector(uint32_t physicalSectorIndex, 
 	 * sectorFlags & AFATFS_CACHE_WRITE) == 0 is true;
 	 * physicalSectorIndex = 0, physicalSectorIndex != 0 is false
 	 */
-	if (!afatfs_assert(sectorFlags & AFATFS_CACHE_WRITE) == 0 || physicalSectorIndex != 0) {
+	if (!afatfs_assert((sectorFlags & AFATFS_CACHE_WRITE) == 0 || physicalSectorIndex != 0)) {
+//		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 		return AFATFS_OPERATION_FAILURE;
 	}
-
+	
 	/* Allocate cache sector */
 	int cacheSectorIndex = afatfs_allocateCacheSector(physicalSectorIndex);
+	
+//	printf("cacheSectorIndex: %d\r\n", cacheSectorIndex);		// cacheSectorIndex = 0
 	
 	/* Error checking */
 	if (cacheSectorIndex == -1) {
 		/* We don't have enough free cache to service this request right now, try again later */
+//		printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 		return AFATFS_OPERATION_IN_PROGRESS;
+	}
+	
+//	printf("afatfs.cacheDescriptor[cacheSectorIndex].state: %d, %s, %s, %d\r\n", afatfs.cacheDescriptor[cacheSectorIndex].state, __FILE__, __FUNCTION__, __LINE__);
+	switch (afatfs.cacheDescriptor[cacheSectorIndex].state) {
+		case AFATFS_CACHE_STATE_READING:
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			return AFATFS_OPERATION_IN_PROGRESS;
+			break;
+		
+		case AFATFS_CACHE_STATE_EMPTY:
+//			printf("sectorFlags & AFATFS_CACHE_READ: %u, %s, %d\r\n", sectorFlags & AFATFS_CACHE_READ, __FUNCTION__, __LINE__);
+			if ((sectorFlags & AFATFS_CACHE_READ) != 0) {
+//				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+				if (sdcard_readBlock(physicalSectorIndex, afatfs_cacheSectorGetMemory(cacheSectorIndex), afatfs_sdcardReadComplete, 0)) {
+					afatfs.cacheDescriptor[cacheSectorIndex].state = AFATFS_CACHE_STATE_READING;
+//					printf("afatfs.cacheDescriptor[cacheSectorIndex].state: %d, %s, %s, %d\r\n", afatfs.cacheDescriptor[cacheSectorIndex].state, __FILE__, __FUNCTION__, __LINE__);
+				}
+				return AFATFS_OPERATION_IN_PROGRESS;
+			}
+			
+			/* We only get to decide these fields if we're the first ones to cache the sector */
+			afatfs.cacheDescriptor[cacheSectorIndex].discardable = (sectorFlags & AFATFS_CACHE_DISCARDABLE) != 0 ? 1 : 0;
+			
+#ifdef AFATFS_MIN_MULTIPLE_BLOCK_WRITE_COUNT
+			/* Don't bother pre-erasing for small block sequences */
+			if (eraseCount < AFATFS_MIN_MULTIPLE_BLOCK_WRITE_COUNT) {
+				eraseCount = 0;
+			} else {
+				eraseCount = MIN(eraseCount, UINT16_MAX);	// If caller ask for a longer chain of sectors we silently truncate that here
+			}
+			
+			afatfs.cacheDescriptor[cacheSectorIndex].consecutiveEraseBlockCount = eraseCount;
+#endif
+			
+			/* Fall through */
+		
+		case AFATFS_CACHE_STATE_WRITING:
+		case AFATFS_CACHE_STATE_IN_SYNC:
+			if ((sectorFlags & AFATFS_CACHE_WRITE) != 0) {
+				afatfs_cacheSectorMarkDirty(&afatfs.cacheDescriptor[cacheSectorIndex]);
+			}
+			/* Fall through */
+		
+		case AFATFS_CACHE_STATE_DIRTY:
+			if ((sectorFlags & AFATFS_CACHE_LOCK) != 0) {
+				afatfs.cacheDescriptor[cacheSectorIndex].locked = 1;
+			}
+			
+			if ((sectorFlags & AFATFS_CACHE_RETAIN) != 0) {
+				afatfs.cacheDescriptor[cacheSectorIndex].retainCount++;
+			}
+			
+			*buffer = afatfs_cacheSectorGetMemory(cacheSectorIndex);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+			
+			return AFATFS_OPERATION_SUCCESS;
+			break;
+		
+		default:
+			/* Cache block in unknown state, should never happen */
+			afatfs_assert(false);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			return AFATFS_OPERATION_FAILURE;
+	}	
+}
+
+/**
+ * Parse the details out of the given MBR sector (512 bytes long).
+ * Return:
+ *		true: if a compatible filesystem was found
+ *		false: otherwise
+ */
+static bool afatfs_parseMBR(const uint8_t *sector)
+{
+	/* Check MBR signature */
+	if (sector[AFATFS_SECTOR_SIZE - 2] != 0x55 || sector[AFATFS_SECTOR_SIZE - 1] != 0xAA) {
+		return false;
 	}
 	
 	
 	
-	return AFATFS_OPERATION_SUCCESS;
+	return false;
 }
 
 static void afatfs_initContinue(void)
@@ -491,8 +725,13 @@ static void afatfs_initContinue(void)
 	
 	switch (afatfs.initPhase) {
 		case AFATFS_INITIALISATION_READ_MBR:
+//			printf("afatfs_cacheSector(0, &sector, AFATFS_CACHE_READ | AFATFS_CACHE_DISCARDABLE, 0): %d\r\n", afatfs_cacheSector(0, &sector, AFATFS_CACHE_READ | AFATFS_CACHE_DISCARDABLE, 0));
 			if (afatfs_cacheSector(0, &sector, AFATFS_CACHE_READ | AFATFS_CACHE_DISCARDABLE, 0) == AFATFS_OPERATION_SUCCESS) {
-				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//				printf("sector[AFATFS_SECTOR_SIZE - 2]: 0x%x, %s, %s, %d\r\n", sector[AFATFS_SECTOR_SIZE - 2], __FILE__, __FUNCTION__, __LINE__);	// 0x55
+//				printf("sector[AFATFS_SECTOR_SIZE - 1]: 0x%x, %s, %s, %d\r\n", sector[AFATFS_SECTOR_SIZE - 1], __FILE__, __FUNCTION__, __LINE__);	// 0xAA
+				if (afatfs_parseMBR(sector)) {
+					
+				}
 			}
 			break;
 		
@@ -548,6 +787,8 @@ void afatfs_poll(void)
 	if (sdcard_poll()) {
 		afatfs_flush();			// TODO: need to be implemented
 		
+//		printf("afatfs.filesystemState: %d, %s, %s, %d\r\n", afatfs.filesystemState, __FILE__, __FUNCTION__, __LINE__);
+		
 		switch (afatfs.filesystemState) {
 			case AFATFS_FILESYSTEM_STATE_INITIALISATION:
 				afatfs_initContinue();
@@ -574,3 +815,9 @@ void afatfs_init(void)
 	sdcard_setProfilerCallback(afatfs_sdcardProfilerCallback);
 #endif
 }
+
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +--------------------------------------------------------- FUNCTIONS ----------------------------------------------------------+ */
+/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +------------------------------------------------------------------------------------------------------------------------------- */

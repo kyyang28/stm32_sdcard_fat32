@@ -289,23 +289,24 @@ static bool sdcard_validateInterfaceCondition(void)
 	
 	/* Do not deselect the card right away, because we'll want to read the rest of its reply if it's a V2 card */
 	
+	/* if status = 0x05 (SDCARD_R1_STATUS_BIT_ILLEGAL_COMMAND | SDCARD_R1_STATUS_BIT_IDLE = 0x04 | 0x01 = 0x05) */
 	if (status == (SDCARD_R1_STATUS_BIT_ILLEGAL_COMMAND | SDCARD_R1_STATUS_BIT_IDLE)) {
 		/* V1 card do not support this command */
 		sdcard.version = 1;
 	}else if (status == SDCARD_R1_STATUS_BIT_IDLE) {
 		spiTransfer(SDCARD_SPI_INSTANCE, ifCondReply, NULL, sizeof(ifCondReply));
 
-		/* CMD8 reponse is 0x000001AB */
-		printf("ifCondReply[0]: 0x%x\r\n", ifCondReply[0]);		// ifCondReply[0] = 0x00
-		printf("ifCondReply[1]: 0x%x\r\n", ifCondReply[1]);		// ifCondReply[1] = 0x00
-		printf("ifCondReply[2]: 0x%x\r\n", ifCondReply[2]);		// ifCondReply[2] = 0x01
-		printf("ifCondReply[3]: 0x%x\r\n", ifCondReply[3]);		// ifCondReply[3] = 0xAB
+		/* CMD8 reponse is 0x000001AB (R1 + trailing 32-bit data) */
+//		printf("ifCondReply[0]: 0x%x\r\n", ifCondReply[0]);		// ifCondReply[0] = 0x00
+//		printf("ifCondReply[1]: 0x%x\r\n", ifCondReply[1]);		// ifCondReply[1] = 0x00
+//		printf("ifCondReply[2]: 0x%x\r\n", ifCondReply[2]);		// ifCondReply[2] = 0x01
+//		printf("ifCondReply[3]: 0x%x\r\n", ifCondReply[3]);		// ifCondReply[3] = 0xAB
 		
         /*
          * We don't bother to validate the SDCard's operating voltage range since the spec requires it to accept our
          * 3.3V, but do check that it echoed back our check pattern properly.
          */
-		if (ifCondReply[3] == SDCARD_IF_COND_CHECK_PATTERN) {
+		if (ifCondReply[3] == SDCARD_IF_COND_CHECK_PATTERN) {	// SDCARD_IF_COND_CHECK_PATTERN = 0xAB
 			sdcard.version = 2;
 		}
 	}
@@ -324,6 +325,7 @@ static bool sdcard_checkInitDone(void)
 {
 	sdcard_select();
 
+	/* sdcard.version == 2 is true, 1 << 30 is 0x40000000 */
 	uint8_t status = sdcard_sendAppCommand(SDCARD_ACOMMAND_SEND_OP_COND, sdcard.version == 2 ? 1 << 30 /* We support high capacity cards */ : 0);
 	
 	sdcard_deselect();
@@ -526,6 +528,7 @@ static bool sdcard_setBlockLength(uint32_t blockLen)
 {
 	sdcard_select();
 	
+	/* SDCARD_COMMAND_SET_BLOCKLEN = 16, blockLen = 512 normally */
 	uint8_t status = sdcard_sendCommand(SDCARD_COMMAND_SET_BLOCKLEN, blockLen);
 	
 	sdcard_deselect();
@@ -543,7 +546,8 @@ bool sdcard_poll(void)
 //	printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 	uint8_t initStatus;
 	bool sendComplete;
-	
+
+	/* Referenced by <How to use SDC.pdf, Initialization Procedure for SPI Mode and Data Transfer> */
 	doMore:
 //	printf("sdcard.state: %d, %s, %d\r\n", sdcard.state, __FUNCTION__, __LINE__);
 	switch (sdcard.state) {
@@ -573,12 +577,14 @@ bool sdcard_poll(void)
 		
 		case SDCARD_STATE_CARD_INIT_IN_PROGRESS:
 //			printf("SDCARD_STATE_CARD_INIT_IN_PROGRESS!!\r\n");
+			/* Send ACMD41 */
 			if (sdcard_checkInitDone()) {
 //				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 				if (sdcard.version == 2) {
 					/* Check for high capacity card */
 					uint32_t ocr;
 					
+					/* Read OCR register with CMD58 and assign the response to ocr variable */
 					if (!sdcard_readOCRRegister(&ocr)) {
 						sdcard_reset();
 						goto doMore;
@@ -624,6 +630,10 @@ bool sdcard_poll(void)
 					goto doMore;
 				}
 				
+				/* *----------------------------------------------------------------+ */
+				/* *-------------- SDCard initialisation is done here --------------+ */
+				/* *----------------------------------------------------------------+ */
+				
 				/* Now we are done with init and we can switch to the full speed clock (<25MHz) */
 				spiSetDivisor(SDCARD_SPI_INSTANCE, SDCARD_SPI_FULL_SPEED_CLOCK_DIVIDER);
 				
@@ -644,6 +654,60 @@ bool sdcard_poll(void)
 			break;
 		
 		case SDCARD_STATE_READING:
+			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			switch (sdcard_receiveDataBlock(sdcard.pendingOperation.buffer, SDCARD_BLOCK_SIZE)) {
+				case SDCARD_RECEIVE_SUCCESS:
+					sdcard_deselect();		// calling sdcard_deselect() from sdcard_readBlock() that return 0 after sending CMD17
+					
+					sdcard.state = SDCARD_STATE_READY;
+					sdcard.failureCount = 0;		// Assume the card is good if it can complete a read
+
+#ifdef SDCARD_PROFILING
+
+#endif				
+
+					/*
+				     * sdcard.pendingOperation.callback() function is assigned inside sdcard_readBlock() function
+				     */
+					if (sdcard.pendingOperation.callback) {
+						sdcard.pendingOperation.callback(
+							SDCARD_BLOCK_OPERATION_READ,
+							sdcard.pendingOperation.blockIndex,
+							sdcard.pendingOperation.buffer,
+							sdcard.pendingOperation.callbackData
+						);
+//						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+					}
+				
+					break;
+				
+				case SDCARD_RECEIVE_BLOCK_IN_PROGRESS:
+					if (millis() <= sdcard.operationStartTime + SDCARD_TIMEOUT_READ_MSEC) {
+						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+						break;		// Timeout not reached yet, so keep waiting
+					}
+					
+					/* Timeout has expired, so fall through to convert to a fatal error */
+				
+				case SDCARD_RECEIVE_ERROR:
+					sdcard_deselect();
+				
+					sdcard_reset();
+				
+					if (sdcard.pendingOperation.callback) {
+						sdcard.pendingOperation.callback(
+							SDCARD_BLOCK_OPERATION_READ,
+							sdcard.pendingOperation.blockIndex,
+							NULL,
+							sdcard.pendingOperation.callbackData
+						);
+						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+					}
+					
+					goto doMore;
+				
+					break;
+			}
 			break;
 		
 		case SDCARD_STATE_STOPPING_MULTIPLE_BLOCK_WRITE:
@@ -652,11 +716,108 @@ bool sdcard_poll(void)
 		case SDCARD_STATE_NOT_PRESENT:
 			printf("SDCARD_STATE_NOT_PRESENT!!\r\n");
 			break;
+
 		default:
 			;
 	}
 	
 	return sdcard_isReady();
+}
+
+/**
+ * Send the stop-transmission token to complete a multi-block write.
+ *
+ * Returns:
+ * 		SDCARD_OPERATION_IN_PROGRESS - We're now waiting for that stop to complete, the card will enter
+ *									   the SDCARD_STATE_STOPPING_MULTIPLE_BLOCK_WRITE state.
+ *		SDCARD_OPERATION_SUCCESS	 - The multi-block write finished immediately, the card will enter
+ *									   the SDCARD_READY state.
+ */
+static sdcardOperationStatus_e sdcard_endWriteBlocks(void)
+{
+	sdcard.multiWriteBlocksRemain = 0;
+	
+	/* 8 dummy clocks to guarantee N_WR clocks between the last card response and this token */
+	spiTransferByte(SDCARD_SPI_INSTANCE, 0xFF);
+	
+	spiTransferByte(SDCARD_SPI_INSTANCE, SDCARD_MULTIPLE_BLOCK_WRITE_STOP_TOKEN);
+	
+	/* Card may choose to raise a busy (non-0xFF) signal after at most N_BR (1 byte) delay */
+	if (sdcard_waitForNonIdleByte(1) == 0xFF) {
+		sdcard.state = SDCARD_STATE_READY;
+		return SDCARD_OPERATION_SUCCESS;
+	} else {
+		sdcard.state = SDCARD_STATE_STOPPING_MULTIPLE_BLOCK_WRITE;
+		sdcard.operationStartTime = millis();
+		
+		return SDCARD_OPERATION_IN_PROGRESS;
+	}
+}
+
+/**
+ * Read the 512-byte block with the given index into the given 512-byte buffer.
+ * 
+ * When the read completes, your callback will be called. If the read was successful, the buffer pointer will be the 
+ * same buffer you originally passed in, otherwise the buffer will be set to NULL.
+ *
+ * You must keep the pointer to the buffer valid until the operation completes!
+ *
+ * Returns:
+ * 		true - The operation was successfully queued for later completion, your callback will be called later.
+ *		false - The operation could not be started due to the card being busy (try again later).
+ */
+bool sdcard_readBlock(uint32_t blockIndex, uint8_t *buffer, sdcard_operationCompleteCallback_c callback, uint32_t callbackData)
+{
+//	printf("sdcard.state: %u, %s, %d\r\n", sdcard.state, __FUNCTION__, __LINE__);	// sdcard.state = 4 (SDCARD_STATE_READY)
+	
+	/* Check if sdcard.state is SDCARD_STATE_READY (number 4) */
+	if (sdcard.state != SDCARD_STATE_READY) {
+		/* If sdcard.state is not read, check if sdcard is doing multiple write blocks operation */
+		if (sdcard.state == SDCARD_STATE_WRITING_MULTIPLE_BLOCKS) {
+			/* If sdcard.state is in multiple write blocks state, check if the write operation is finished successfully or not */
+			if (sdcard_endWriteBlocks() != SDCARD_OPERATION_SUCCESS) {
+				/* if the multiple write operation is finished successfully, then fall through to read operation afterwards, 
+ 				 * otherwise, return false indicating that the read block operation is failed.
+				 */
+				return false;
+			}
+		} else {
+			/* If sdcard.state is not ready and not in the multiple write blocks state either, then read operation failed, return false */
+			return false;
+		}
+	}
+	
+	sdcard_select();
+	
+	/** Standard size cards use byte addressing, high capacity cards use block addressing
+	 *
+	 * 	SDCARD_COMMAND_READ_SINGLE_BLOCK = CMD17
+	 */
+	uint8_t status = sdcard_sendCommand(SDCARD_COMMAND_READ_SINGLE_BLOCK, sdcard.highCapacity ? blockIndex : blockIndex * SDCARD_BLOCK_SIZE);
+	
+	/* sending read command successfully */
+	if (status == 0) {
+		sdcard.pendingOperation.buffer = buffer;
+		sdcard.pendingOperation.blockIndex = blockIndex;
+		sdcard.pendingOperation.callback = callback;
+		sdcard.pendingOperation.callbackData = callbackData;
+		
+		sdcard.state = SDCARD_STATE_READING;
+		
+		sdcard.operationStartTime = millis();			// read operation STARTING TIME
+		
+		/* Leave the card selected for the whole transaction, do not invoke the sdcard_deselect() function
+		 * 
+		 * INFO: SDCARD READ operation will be handled in the sdcard_poll() function thereafter
+		 */
+		
+		return true;
+	} else {
+		/* read command failed  */
+		sdcard_deselect();
+		
+		return false;
+	}
 }
 
 #endif	// #ifdef USE_SDCARD

@@ -71,6 +71,10 @@ typedef struct sdcardCSD_t {
 #define SDCARD_ACOMMAND_SEND_OP_COND				41
 #define SDCARD_ACOMMAND_SET_WR_BLOCK_ERASE_COUNT	23
 
+/* There are worst-case timeouts defined for High Speed Cards */
+#define SDCARD_TIMEOUT_READ_MSEC					100
+#define SDCARD_TIMEOUT_WRITE_MSEC					250
+
 uint32_t readBitfield(uint8_t *buffer, unsigned bitIndex, unsigned bitLen);
 
 #endif	// __SDCARD_STANDARD_H
