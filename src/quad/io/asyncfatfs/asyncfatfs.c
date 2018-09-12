@@ -10,12 +10,30 @@
 /* 	FAT filesystems are allowed to differ from these parameters, but we choose not to support those
  *	weird filesystems
  */
-#define AFATFS_SECTOR_SIZE				512
-#define AFATFS_NUM_FATS					2
+#define AFATFS_SECTOR_SIZE							512
+#define AFATFS_NUM_FATS								2
 
-#define AFATFS_NUM_CACHE_SECTORS		8
+#define AFATFS_NUM_CACHE_SECTORS					8
 
-#define AFATFS_MAX_OPEN_FILES			3
+#define AFATFS_MAX_OPEN_FILES						3
+
+/* In MBR (Master Boot Record), the partition table starts at offset (in Hexademical) 0x1BE which is 446 (in Integer)
+ *
+ * Each partition table is 16 bytes in length
+ *
+ * Master Boot Record / Extended Partition Boot Record
+ * (offset)
+ * 0x0000 to 0x01BD - First 446 bytes (boot loader code)
+ * 0x01BE to 0x01CD - Partition entry 1 (16 bytes)
+ * 0x01CE to 0x01DD - Partition entry 2 (16 bytes)
+ * 0x01DE to 0x01ED - Partition entry 3 (16 bytes)
+ * 0x01EE to 0x01FD - Partition entry 4 (16 bytes)
+ * 0x01FE to 0x01FF - Boot signature (55 AA) (2 bytes)
+ *
+ * In total,
+ * 	boot loader code (446 bytes) + entry 1 (16 bytes) + entry 2 (16 bytes) + entry 3 (16 bytes) + entry 4 (16 bytes) + Boot signature (2 bytes) = 512 bytes
+ */
+#define AFATFS_PARTITION_TABLE_START_OFFSET			446		// 446 = 0x1BE
 
 /*
  * How many blocks will we write in a row before we bother using the SDcard's multiple block write method?
@@ -744,11 +762,23 @@ static bool afatfs_parseMBR(const uint8_t *sector)
 		return false;
 	}
 	
-	mbrPartitionEntry_t *partition = (mbrPartitionEntry_t *)(sector + 446);
+	/* AFATFS_PARTITION_TABLE_START_OFFSET = 446
+	 * partition entry starts at offset 446
+	 */
+	mbrPartitionEntry_t *partition = (mbrPartitionEntry_t *)(sector + AFATFS_PARTITION_TABLE_START_OFFSET);
 	
+	/* For partitions, each one is 16 bytes length */
 	for (int i = 0; i < 4; i++) {
-		printf("partition[%d].lbaBegin: %u, %s, %s, %d\r\n", i, partition[i].lbaBegin, __FILE__, __FUNCTION__, __LINE__);
-		printf("partition[%d].type: %u, %s, %s, %d\r\n\r\n", i, partition[i].type, __FILE__, __FUNCTION__, __LINE__);
+//		printf("partition[%d].lbaBegin: %u, %s, %d\r\n", i, partition[i].lbaBegin, __FUNCTION__, __LINE__);
+//		printf("partition[%d].type: 0x%x, %s, %d\r\n\r\n", i, partition[i].type, __FUNCTION__, __LINE__);
+		/* partition[i].lbaBegin = 8192
+		 * partition[%d].type = 12
+		 *
+		 * MBR_PARTITION_TYPE_FAT32 = 0x0B (11)
+		 * MBR_PARTITION_TYPE_FAT32_LBA = 0x0C (12)
+		 * MBR_PARTITION_TYPE_FAT16 = 0x06
+		 * MBR_PARTITION_TYPE_FAT16_LBA = 0x0E (14)
+		 */
 		if (
 			partition[i].lbaBegin > 0
 			&& (
@@ -759,10 +789,12 @@ static bool afatfs_parseMBR(const uint8_t *sector)
 			)
 		) {
 			afatfs.partitionStartSector = partition[i].lbaBegin;
+//			printf("afatfs.partitionStartSector: %u, %s, %d\r\n", afatfs.partitionStartSector, __FUNCTION__, __LINE__);
 			return true;
 		}
 	}
 	
+//	printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 	return false;
 }
 
@@ -785,40 +817,64 @@ static bool afatfs_parseVolumeID(const uint8_t *sector)
 		return false;
 	}
 	
-	printf("afatfs.partitionStartSector: %u, %s, %s, %d\r\n", afatfs.partitionStartSector, __FILE__, __FUNCTION__, __LINE__);
-	printf("volume->reservedSectorCount: %u, %s, %s, %d\r\n", volume->reservedSectorCount, __FILE__, __FUNCTION__, __LINE__);
-	/* Assign the afatfs.fatStartSector */
-	afatfs.fatStartSector = afatfs.partitionStartSector + volume->reservedSectorCount;
+//	printf("afatfs.partitionStartSector: %u, %s, %d\r\n", afatfs.partitionStartSector, __FUNCTION__, __LINE__);
+//	printf("volume->reservedSectorCount: %u, %s, %d\r\n", volume->reservedSectorCount, __FUNCTION__, __LINE__);
+	/* Assign the afatfs.fatStartSector
+	 *
+	 * afatfs.partitionStartSector = 8192
+	 * volume->reservedSectorCount = 598
+	 */
+	afatfs.fatStartSector = afatfs.partitionStartSector + volume->reservedSectorCount;		// afatfs.fatStartSector = 8790
+	
+//	printf("afatfs.fatStartSector: %u, %s, %d\r\n", afatfs.fatStartSector, __FUNCTION__, __LINE__);
 	
 	/* Assign the volume->sectorsPerCluster to afatfs.sectorPerCluster */
 	afatfs.sectorsPerCluster = volume->sectorsPerCluster;
-	printf("volume->sectorsPerCluster: %u, %s, %s, %d\r\n", volume->sectorsPerCluster, __FILE__, __FUNCTION__, __LINE__);
-	printf("afatfs.sectorsPerCluster: %u, %s, %s, %d\r\n", afatfs.sectorsPerCluster, __FILE__, __FUNCTION__, __LINE__);
+//	printf("volume->sectorsPerCluster: %u, %s, %d\r\n", volume->sectorsPerCluster, __FUNCTION__, __LINE__);
+//	printf("afatfs.sectorsPerCluster: %u, %s, %d\r\n", afatfs.sectorsPerCluster, __FUNCTION__, __LINE__);
 	/* afatfs.sectorsPerCluster should be 64 */
 	if (afatfs.sectorsPerCluster < 1 || afatfs.sectorsPerCluster > 128 || !isPowerOfTwo(afatfs.sectorsPerCluster)) {
 		return false;
 	}
 	
 	/* Assign afatfs.byteInClusterMask which should be AFATFS_SECTOR_SIZE * afatfs.sectorsPerCluster - 1 = 512 (bytes) * 64 - 1 = 32767 bytes */
-	afatfs.byteInClusterMask = AFATFS_SECTOR_SIZE * afatfs.sectorsPerCluster - 1;
+	afatfs.byteInClusterMask = AFATFS_SECTOR_SIZE * afatfs.sectorsPerCluster - 1;		// afatfs.byteInClusterMask = 32767
+	
+//	printf("afatfs.byteInClusterMask: %u, %s, %d\r\n", afatfs.byteInClusterMask, __FUNCTION__, __LINE__);
 	
 	/* Assign the size in sectors of a single FAT, which should be 3797 sectors in FAT32 according to 16G Sandisk microSD card */
-	afatfs.fatSectors = volume->FATSize16 != 0 ? volume->FATSize16 : volume->fatDescriptor.fat32.FATSize32;
+	afatfs.fatSectors = volume->FATSize16 != 0 ? volume->FATSize16 : volume->fatDescriptor.fat32.FATSize32;	// afatfs.fatSectors = 3797
+
+//	printf("afatfs.fatSectors: %u, %s, %d\r\n", afatfs.fatSectors, __FUNCTION__, __LINE__);
 	
 	/** Assign the number of sectors that the root directory occupies
 	 *  Always zero on FAT32 since rootEntryCount is always zero on FAT32 (this is non-zero on FAT16)
 	 */
 	afatfs.rootDirectorySectors = ((volume->rootEntryCount * FAT_DIRECTORY_ENTRY_SIZE) + (volume->bytesPerSector - 1)) / volume->bytesPerSector;
+
+//	printf("afatfs.rootDirectorySectors: %u, %s, %d\r\n", afatfs.rootDirectorySectors, __FUNCTION__, __LINE__);
 	
 	/* totalSectors = volume->totalSector32 = 31108096 */
 	uint32_t totalSectors = volume->totalSectors16 != 0 ? volume->totalSectors16 : volume->totalSectors32;
-	
-	/* The count of sectors in the data region of the volume */
+
+//	printf("totalSectors: %u, %s, %d\r\n", totalSectors, __FUNCTION__, __LINE__);
+
+	/* The count of sectors in the data region of the volume
+	 *
+	 * dataSectors = 31108096 - (598 + 2 * 3797) + 0 = 31108096 - (598 + 2 * 3797) + 0 = 31108096 - 8192 = 31099904
+	 */
 	uint32_t dataSectors = totalSectors - (volume->reservedSectorCount + (AFATFS_NUM_FATS * afatfs.fatSectors) + afatfs.rootDirectorySectors);	
 
-	/* The count of clusters */
+//	printf("dataSectors: %u, %s, %d\r\n", dataSectors, __FUNCTION__, __LINE__);
+
+	/* The count of clusters
+	 *
+	 * afatfs.numClusters = 31099904 / 64 = 485936
+	 */
 	afatfs.numClusters = dataSectors / volume->sectorsPerCluster;
-	
+
+//	printf("afatfs.numClusters: %u, %s, %d\r\n", afatfs.numClusters, __FUNCTION__, __LINE__);
+
 	/* Determine the FAT type
 	 *
 	 * FAT12_MAX_CLUSTERS = 4084
@@ -840,18 +896,28 @@ static bool afatfs_parseVolumeID(const uint8_t *sector)
 	 * volume->fatDescriptor.fat32.rootCluster is 2, which is read by WinHex tool
 	 */
 	if (afatfs.filesystemType == FAT_FILESYSTEM_TYPE_FAT32) {
-		printf("volume->fatDescriptor.fat32.rootCluster: %u, %s, %s, %d\r\n", volume->fatDescriptor.fat32.rootCluster, __FILE__, __FUNCTION__, __LINE__);
 		afatfs.rootDirectoryCluster = volume->fatDescriptor.fat32.rootCluster;
+//		printf("afatfs.rootDirectoryCluster: %u, %s, %d\r\n", afatfs.rootDirectoryCluster, __FUNCTION__, __LINE__);
 	} else {
 		afatfs.rootDirectoryCluster = 0;	// FAT16 does not store the root directory in clusters
 	}
 	
-	/* Determine the end of FATs */
-	printf("afatfs.fatStartSector: %u, %s, %s, %d\r\n", afatfs.fatStartSector, __FILE__, __FUNCTION__, __LINE__);
+	/* Determine the end of FATs
+	 *
+	 * endOfFATs = 8790 + 2 * 3797 = 16384
+	 */
+//	printf("afatfs.fatStartSector: %u, %s, %s, %d\r\n", afatfs.fatStartSector, __FILE__, __FUNCTION__, __LINE__);
 	uint32_t endOfFATs = afatfs.fatStartSector + AFATFS_NUM_FATS * afatfs.fatSectors;	// AFATFS_NUM_FATS = 2, afatfs.fatSectors = 3797
 
-	/* Determine the start sector of the cluster */
+//	printf("endOfFATs: %u, %s, %d\r\n", endOfFATs, __FUNCTION__, __LINE__);
+
+	/* Determine the start sector of the cluster
+	 *
+	 * afatfs.clusterStartSector = 16384 + 0 = 16384
+	 */
 	afatfs.clusterStartSector = endOfFATs + afatfs.rootDirectorySectors;	// afatfs.rootDirectorySectors should be 0 on FAT32 system
+
+//	printf("afatfs.clusterStartSector: %u, %s, %d\r\n", afatfs.clusterStartSector, __FUNCTION__, __LINE__);
 	
 	return true;
 }
@@ -877,6 +943,34 @@ static void afatfs_initFileHandle(afatfsFilePtr_t file)
 	file->writeLockedCacheIndex = -1;
 	
 	file->readRetainCacheIndex = -1;
+}
+
+/**
+ * Attempt to seek the file cursor from the given point (`whence`) by the given offset, just like C's fseek
+ * 
+ * AFATFS_SEEK_SET with offset 0 will always return AFATFS_OPERATION_SUCCESS
+ *
+ * Returns:
+ * 		AFATFS_OPERATION_SUCCESS			- The seek was completed immediately
+ * 		AFATFS_OPERATION_IN_PROGRESS		- The seek was queued
+ * 		AFATFS_OPERATION_FAILURE			- The seek was completed immediately
+ */
+afatfsOperationStatus_e afatfs_fseek(afatfsFilePtr_t file, int32_t offset, afatfsSeek_e whence)
+{
+	/* We need an up-to-date logical filesize so we can clamp seeks to the EOF */
+	
+	
+	switch (whence) {
+		case AFATFS_SEEK_CUR:
+			break;
+		
+		case AFATFS_SEEK_END:
+			break;
+		
+		case AFATFS_SEEK_SET:
+			;
+			/* Fall through */
+	}
 }
 
 /**
@@ -921,13 +1015,13 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 		afatfs.currentDirectory.firstCluster = afatfs.rootDirectoryCluster;		// afatfs.rootDirectoryCluster = 2
 		
 		/* Configure the attribute of the current directory */
-		
+		afatfs.currentDirectory.attrib = FAT_FILE_ATTRIBUTE_DIRECTORY;
 		
 		/* Configure the sectorNumberPhysical of the directory entry position to ZERO since the root directory don't have a directory entry to represent themselves */
-		
+		afatfs.currentDirectory.directoryEntryPos.sectorNumberPhysical = 0;
 		
 		/* Call afatfs_fseek() to seek the current directory */
-		
+		afatfs_fseek(&afatfs.currentDirectory, 0, AFATFS_SEEK_SET);
 	}
 }
 
@@ -949,7 +1043,7 @@ static void afatfs_initContinue(void)
 //				printf("sector[AFATFS_SECTOR_SIZE - 1]: 0x%x, %s, %s, %d\r\n", sector[AFATFS_SECTOR_SIZE - 1], __FILE__, __FUNCTION__, __LINE__);	// 0xAA
 				if (afatfs_parseMBR(sector)) {
 //					/* afatfs_parseMBR() successful */
-					printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//					printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 					afatfs.initPhase = AFATFS_INITIALISATION_READ_VOLUME_ID;
 					goto doMore;
 				} else {
@@ -961,9 +1055,10 @@ static void afatfs_initContinue(void)
 			break;
 		
 		case AFATFS_INITIALISATION_READ_VOLUME_ID:
-			printf("afatfs.partitionStartSector: %u, %s, %s, %d\r\n", afatfs.partitionStartSector, __FILE__, __FUNCTION__, __LINE__);
+//			printf("afatfs.partitionStartSector: %u, %s, %d\r\n", afatfs.partitionStartSector, __FUNCTION__, __LINE__);
+			/* afatfs.partitionStartSector = 8192 for Sandisk MicroSD card 16GB */
 			if (afatfs_cacheSector(afatfs.partitionStartSector, &sector, AFATFS_CACHE_READ | AFATFS_CACHE_DISCARDABLE, 0) == AFATFS_OPERATION_SUCCESS) {
-				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 				if (afatfs_parseVolumeID(sector)) {
 					/* If parse volume ID successful, open the root directory */
 					afatfs_chdir(NULL);

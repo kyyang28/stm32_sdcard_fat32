@@ -25,6 +25,12 @@ typedef enum {
 }afatfsOperationStatus_e;
 
 typedef enum {
+	AFATFS_SEEK_SET,					// 0
+	AFATFS_SEEK_CUR,					// 1
+	AFATFS_SEEK_END						// 2
+}afatfsSeek_e;
+
+typedef enum {
 	AFATFS_ERROR_NONE = 0,
 	AFATFS_ERROR_GENERIC = 1,
 	AFATFS_ERROR_BAD_MBR = 2,
@@ -33,6 +39,8 @@ typedef enum {
 
 typedef void (*afatfsFileCallback_t)(afatfsFilePtr_t file);
 typedef void (*afatfsCallback_t)(void);
+
+bool afatfs_chdir(afatfsFilePtr_t dirHandle);
 
 void afatfs_init(void);
 bool afatfs_flush(void);

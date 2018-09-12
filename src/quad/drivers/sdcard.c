@@ -654,7 +654,7 @@ bool sdcard_poll(void)
 			break;
 		
 		case SDCARD_STATE_READING:
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			switch (sdcard_receiveDataBlock(sdcard.pendingOperation.buffer, SDCARD_BLOCK_SIZE)) {
 				case SDCARD_RECEIVE_SUCCESS:
 					sdcard_deselect();		// calling sdcard_deselect() from sdcard_readBlock() that return 0 after sending CMD17
