@@ -2,7 +2,7 @@
 .\objects\bitband_i2c_soft.o: .\src\lib\STM32F4xx_StdPeriph_Drivers\inc\stm32f4xx_gpio.h
 .\objects\bitband_i2c_soft.o: .\src\lib\CMSIS\CM4\DeviceSupport\ST\STM32F4xx\stm32f4xx.h
 .\objects\bitband_i2c_soft.o: .\src\lib\CMSIS\CM4\CoreSupport\core_cm4.h
-.\objects\bitband_i2c_soft.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\bitband_i2c_soft.o: E:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\bitband_i2c_soft.o: .\src\lib\CMSIS\CM4\CoreSupport\core_cmInstr.h
 .\objects\bitband_i2c_soft.o: .\src\lib\CMSIS\CM4\CoreSupport\core_cmFunc.h
 .\objects\bitband_i2c_soft.o: .\src\lib\CMSIS\CM4\CoreSupport\core_cmSimd.h

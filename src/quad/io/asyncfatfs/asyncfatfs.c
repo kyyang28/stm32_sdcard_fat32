@@ -1,5 +1,7 @@
 
 #include <stdio.h>				// for printf
+#include <string.h>				// memcpy
+
 #include "sdcard.h"				// including stdint.h, stdbool.h
 #include "asyncfatfs.h"
 #include "fat_standard.h"
@@ -26,40 +28,69 @@
  */
 #define AFATFS_USE_FREEFILE
 
+/* +-------------------------------------------------------------------------------------------+ */
+/* +                                         FILE MODE                                         + */
+/* +-------------------------------------------------------------------------------------------+ */
+
+/* Read from the file */
+#define AFATFS_FILE_MODE_READ						1
+
+/* Write to the file */
+#define AFATFS_FILE_MODE_WRITE						2
+
+/* Append to the file, may not be combined with the write flag */
+#define AFATFS_FILE_MODE_APPEND						4
+
+/* File will occupy a series of superclusters (only valid for creating new files) */
+#define AFATFS_FILE_MODE_CONTIGUOUS					8
+
+/* File should be created if it doesn't exist */
+#define AFATFS_FILE_MODE_CREATE						16
+
+/* The file's directory entry should be locked in cache so we can read it with no latency */
+#define AFATFS_FILE_MODE_RETAIN_DIRECTORY			32
+
+/* +-------------------------------------------------------------------------------------------+ */
+/* +                                         FILE MODE                                         + */
+/* +-------------------------------------------------------------------------------------------+ */
+
+
 /* Open the cache sector for read access (it will be read from disk) */
-#define AFATFS_CACHE_READ				1
+#define AFATFS_CACHE_READ							1
 
 /* Open the cache sector for write access (it will be marked dirty) */
-#define AFATFS_CACHE_WRITE				2
+#define AFATFS_CACHE_WRITE							2
 
 /* Lock this sector to prevent its state from transitioning (prevent flushes to disk) */
-#define AFATFS_CACHE_LOCK				4
+#define AFATFS_CACHE_LOCK							4
 
 /* Discard this sector in preference to other sectors when it is in the In-Sync state */
-#define AFATFS_CACHE_DISCARDABLE		8
+#define AFATFS_CACHE_DISCARDABLE					8
 
 /* Increase the retain counter of the cache sector to prevent it from being discarded when in the In-Sync state */
-#define AFATFS_CACHE_RETAIN				16
+#define AFATFS_CACHE_RETAIN							16
 
 typedef enum {
-	AFATFS_INITIALISATION_READ_MBR,
-	AFATFS_INITIALISATION_READ_VOLUME_ID,
+	AFATFS_INITIALISATION_READ_MBR,															// 0
+	AFATFS_INITIALISATION_READ_VOLUME_ID,													// 1
 	
 #ifdef AFATFS_USE_FREEFILE
-	AFATFS_INITIALISATION_FREEFILE_CREATE,
-	AFATFS_INITIALISATION_FREEFILE_CREATING,
-	AFATFS_INITIALISATION_FREEFILE_FAT_SEARCH,
-	AFATFS_INITIALISATION_FREEFILE_UPDATE_FAT,
-	AFATFS_INITIALISATION_FREEFILE_SAVE_DIR_ENTRY,
-	AFATFS_INITIALISATION_FREEFILE_LAST = AFATFS_INITIALISATION_FREEFILE_SAVE_DIR_ENTRY,
+	AFATFS_INITIALISATION_FREEFILE_CREATE,													// 2
+	AFATFS_INITIALISATION_FREEFILE_CREATING,												// 3
+	AFATFS_INITIALISATION_FREEFILE_FAT_SEARCH,												// 4
+	AFATFS_INITIALISATION_FREEFILE_UPDATE_FAT,												// 5
+	AFATFS_INITIALISATION_FREEFILE_SAVE_DIR_ENTRY,											// 6
+	AFATFS_INITIALISATION_FREEFILE_LAST = AFATFS_INITIALISATION_FREEFILE_SAVE_DIR_ENTRY,	// 7
 #endif
 	
 #ifdef AFATFS_USE_INTROSPECTIVE_LOGGING
-	AFATFS_INITIALISATION_INTROSPEC_LOG_CREATE,
-	AFATFS_INITIALISATION_INTROSPEC_LOG_CREATING,
+	AFATFS_INITIALISATION_INTROSPEC_LOG_CREATE,												// 2 if AFATFS_USE_FREEFILE is not defined, 8 otherwise
+	AFATFS_INITIALISATION_INTROSPEC_LOG_CREATING,											// 3 if AFATFS_USE_FREEFILE is not defined, 9 otherwise
 #endif
 	
-	AFATFS_INITIALISATION_DONE
+	AFATFS_INITIALISATION_DONE																// 2 if neither AFATFS_USE_FREEFILE nor AFATFS_USE_INTROSPECTIVE_LOGGING is defined
+																							// 8 if only AFATFS_USE_FREEFILE is defined
+																							// 10 if both AFATFS_USE_FREEFILE and AFATFS_USE_INTROSPECTIVE_LOGGING are defined
 }afatfsInitialisationPhase_e;
 
 typedef enum {
@@ -136,10 +167,10 @@ typedef struct afatfsCacheBlockDescriptor_t {
 }afatfsCacheBlockDescriptor_t;
 
 typedef enum {
-	AFATFS_FILE_TYPE_NONE,
-	AFATFS_FILE_TYPE_NORMAL,
-	AFATFS_FILE_TYPE_FAT16_ROOT_DIRECTORY,
-	AFATFS_FILE_TYPE_DIRECTORY
+	AFATFS_FILE_TYPE_NONE,						// 0
+	AFATFS_FILE_TYPE_NORMAL,					// 1
+	AFATFS_FILE_TYPE_FAT16_ROOT_DIRECTORY,		// 2
+	AFATFS_FILE_TYPE_DIRECTORY					// 3
 }afatfsFileType_e;
 
 typedef enum {
@@ -171,10 +202,10 @@ typedef struct afatfsSeek_t {
 }afatfsSeek_t;
 
 typedef enum {
-	AFATFS_APPEND_SUPERCLUSTER_PHASE_INIT = 0,
-	AFATFS_APPEND_SUPERCLUSTER_PHASE_UPDATE_FREEFILE_DIRECTORY,
-	AFATFS_APPEND_SUPERCLUSTER_PHASE_UPDATE_FAT,
-	AFATFS_APPEND_SUPERCLUSTER_PHASE_UPDATE_FILE_DIRECTORY
+	AFATFS_APPEND_SUPERCLUSTER_PHASE_INIT = 0,						// 0
+	AFATFS_APPEND_SUPERCLUSTER_PHASE_UPDATE_FREEFILE_DIRECTORY,		// 1
+	AFATFS_APPEND_SUPERCLUSTER_PHASE_UPDATE_FAT,					// 2
+	AFATFS_APPEND_SUPERCLUSTER_PHASE_UPDATE_FILE_DIRECTORY			// 3
 }afatfsAppendSuperclusterPhase_e;
 
 typedef struct afatfsAppendSuperCluster_t {
@@ -185,13 +216,13 @@ typedef struct afatfsAppendSuperCluster_t {
 }afatfsAppendSuperCluster_t;
 
 typedef enum {
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_INITIAL = 0,
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_FIND_FREESPACE,
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_UPDATE_FAT1,
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_UPDATE_FAT2,
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_UPDATE_FILE_DIRECTORY,
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_COMPLETE,
-	AFATFS_APPEND_FREE_CLUSTER_PHASE_FAILURE
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_INITIAL = 0,					// 0
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_FIND_FREESPACE,				// 1
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_UPDATE_FAT1,					// 2
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_UPDATE_FAT2,					// 3
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_UPDATE_FILE_DIRECTORY,			// 4
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_COMPLETE,						// 5
+	AFATFS_APPEND_FREE_CLUSTER_PHASE_FAILURE						// 6
 }afatfsAppendFreeClusterPhase_e;
 
 typedef struct afatfsAppendFreeCluster_t {
@@ -201,11 +232,11 @@ typedef struct afatfsAppendFreeCluster_t {
 }afatfsAppendFreeCluster_t;
 
 typedef enum {
-	AFATFS_EXTEND_SUBDIRECTORY_PHASE_INITIAL = 0,
-	AFATFS_EXTEND_SUBDIRECTORY_PHASE_ADD_FREE_CLUSTER = 0,
-	AFATFS_EXTEND_SUBDIRECTORY_PHASE_WRITE_SECTORS,
-	AFATFS_EXTEND_SUBDIRECTORY_PHASE_SUCCESS,
-	AFATFS_EXTEND_SUBDIRECTORY_PHASE_FAILURE
+	AFATFS_EXTEND_SUBDIRECTORY_PHASE_INITIAL = 0,					// 0
+	AFATFS_EXTEND_SUBDIRECTORY_PHASE_ADD_FREE_CLUSTER = 0,			// 0
+	AFATFS_EXTEND_SUBDIRECTORY_PHASE_WRITE_SECTORS,					// 1
+	AFATFS_EXTEND_SUBDIRECTORY_PHASE_SUCCESS,						// 2
+	AFATFS_EXTEND_SUBDIRECTORY_PHASE_FAILURE						// 3
 }afatfsExtendSubdirectoryPhase_e;
 
 typedef struct afatfsExtendSubdirectory_t {
@@ -401,6 +432,11 @@ static afatfs_t afatfs;
 /* +--------------------------------------------------------- FUNCTIONS ----------------------------------------------------------+ */
 /* +------------------------------------------------------------------------------------------------------------------------------- */
 /* +------------------------------------------------------------------------------------------------------------------------------- */
+
+static bool isPowerOfTwo(unsigned int x)
+{
+	return ((x != 0) && ((x & (~x + 1)) == x));
+}
 
 /**
  * Check for conditions that should always be true (and if otherwise mean a bug or a corrupt filesystem).
@@ -708,9 +744,191 @@ static bool afatfs_parseMBR(const uint8_t *sector)
 		return false;
 	}
 	
+	mbrPartitionEntry_t *partition = (mbrPartitionEntry_t *)(sector + 446);
 	
+	for (int i = 0; i < 4; i++) {
+		printf("partition[%d].lbaBegin: %u, %s, %s, %d\r\n", i, partition[i].lbaBegin, __FILE__, __FUNCTION__, __LINE__);
+		printf("partition[%d].type: %u, %s, %s, %d\r\n\r\n", i, partition[i].type, __FILE__, __FUNCTION__, __LINE__);
+		if (
+			partition[i].lbaBegin > 0
+			&& (
+				partition[i].type == MBR_PARTITION_TYPE_FAT32
+				|| partition[i].type == MBR_PARTITION_TYPE_FAT32_LBA
+				|| partition[i].type == MBR_PARTITION_TYPE_FAT16
+				|| partition[i].type == MBR_PARTITION_TYPE_FAT16_LBA
+			)
+		) {
+			afatfs.partitionStartSector = partition[i].lbaBegin;
+			return true;
+		}
+	}
 	
 	return false;
+}
+
+static bool afatfs_parseVolumeID(const uint8_t *sector)
+{
+	/* local pointer variable volume points to the read sector region */
+	fatVolumeID_t *volume = (fatVolumeID_t *)sector;
+	
+	/* Initialise afatfs.fileSystemType to FAT_FILESYSTEM_TYPE_INVALID (0) */
+	afatfs.filesystemType = FAT_FILESYSTEM_TYPE_INVALID;
+	
+	/*
+	 * AFATFS_SECTOR_SIZE = 512
+	 * AFATFS_NUM_FATS = 2
+	 * FAT_VOLUME_ID_SIGNATURE_1 = 0x55
+	 * FAT_VOLUME_ID_SIGNATURE_2 = 0xAA
+	 */
+	if (volume->bytesPerSector != AFATFS_SECTOR_SIZE || volume->numFATs != AFATFS_NUM_FATS
+		|| sector[510] != FAT_VOLUME_ID_SIGNATURE_1 || sector[511] != FAT_VOLUME_ID_SIGNATURE_2) {
+		return false;
+	}
+	
+	printf("afatfs.partitionStartSector: %u, %s, %s, %d\r\n", afatfs.partitionStartSector, __FILE__, __FUNCTION__, __LINE__);
+	printf("volume->reservedSectorCount: %u, %s, %s, %d\r\n", volume->reservedSectorCount, __FILE__, __FUNCTION__, __LINE__);
+	/* Assign the afatfs.fatStartSector */
+	afatfs.fatStartSector = afatfs.partitionStartSector + volume->reservedSectorCount;
+	
+	/* Assign the volume->sectorsPerCluster to afatfs.sectorPerCluster */
+	afatfs.sectorsPerCluster = volume->sectorsPerCluster;
+	printf("volume->sectorsPerCluster: %u, %s, %s, %d\r\n", volume->sectorsPerCluster, __FILE__, __FUNCTION__, __LINE__);
+	printf("afatfs.sectorsPerCluster: %u, %s, %s, %d\r\n", afatfs.sectorsPerCluster, __FILE__, __FUNCTION__, __LINE__);
+	/* afatfs.sectorsPerCluster should be 64 */
+	if (afatfs.sectorsPerCluster < 1 || afatfs.sectorsPerCluster > 128 || !isPowerOfTwo(afatfs.sectorsPerCluster)) {
+		return false;
+	}
+	
+	/* Assign afatfs.byteInClusterMask which should be AFATFS_SECTOR_SIZE * afatfs.sectorsPerCluster - 1 = 512 (bytes) * 64 - 1 = 32767 bytes */
+	afatfs.byteInClusterMask = AFATFS_SECTOR_SIZE * afatfs.sectorsPerCluster - 1;
+	
+	/* Assign the size in sectors of a single FAT, which should be 3797 sectors in FAT32 according to 16G Sandisk microSD card */
+	afatfs.fatSectors = volume->FATSize16 != 0 ? volume->FATSize16 : volume->fatDescriptor.fat32.FATSize32;
+	
+	/** Assign the number of sectors that the root directory occupies
+	 *  Always zero on FAT32 since rootEntryCount is always zero on FAT32 (this is non-zero on FAT16)
+	 */
+	afatfs.rootDirectorySectors = ((volume->rootEntryCount * FAT_DIRECTORY_ENTRY_SIZE) + (volume->bytesPerSector - 1)) / volume->bytesPerSector;
+	
+	/* totalSectors = volume->totalSector32 = 31108096 */
+	uint32_t totalSectors = volume->totalSectors16 != 0 ? volume->totalSectors16 : volume->totalSectors32;
+	
+	/* The count of sectors in the data region of the volume */
+	uint32_t dataSectors = totalSectors - (volume->reservedSectorCount + (AFATFS_NUM_FATS * afatfs.fatSectors) + afatfs.rootDirectorySectors);	
+
+	/* The count of clusters */
+	afatfs.numClusters = dataSectors / volume->sectorsPerCluster;
+	
+	/* Determine the FAT type
+	 *
+	 * FAT12_MAX_CLUSTERS = 4084
+	 * FAT16_MAX_CLUSTERS = 65524
+	 *
+	 * WARNING: MUST USE <= sign here to avoid off-by-one error that mentioned in <fatgen103.pdf>
+	 */
+	if (afatfs.numClusters <= FAT12_MAX_CLUSTERS) {
+		afatfs.filesystemType = FAT_FILESYSTEM_TYPE_FAT12;
+		return false;		// Since FAT is not a supported filesystem
+	} else if (afatfs.numClusters <= FAT16_MAX_CLUSTERS) {
+		afatfs.filesystemType = FAT_FILESYSTEM_TYPE_FAT16;
+	} else {
+		afatfs.filesystemType = FAT_FILESYSTEM_TYPE_FAT32;
+	}
+	
+	/* rootCluster is the cluster number of the first cluster of the root directory, usually 2 but not required to be 2
+	 * 
+	 * volume->fatDescriptor.fat32.rootCluster is 2, which is read by WinHex tool
+	 */
+	if (afatfs.filesystemType == FAT_FILESYSTEM_TYPE_FAT32) {
+		printf("volume->fatDescriptor.fat32.rootCluster: %u, %s, %s, %d\r\n", volume->fatDescriptor.fat32.rootCluster, __FILE__, __FUNCTION__, __LINE__);
+		afatfs.rootDirectoryCluster = volume->fatDescriptor.fat32.rootCluster;
+	} else {
+		afatfs.rootDirectoryCluster = 0;	// FAT16 does not store the root directory in clusters
+	}
+	
+	/* Determine the end of FATs */
+	printf("afatfs.fatStartSector: %u, %s, %s, %d\r\n", afatfs.fatStartSector, __FILE__, __FUNCTION__, __LINE__);
+	uint32_t endOfFATs = afatfs.fatStartSector + AFATFS_NUM_FATS * afatfs.fatSectors;	// AFATFS_NUM_FATS = 2, afatfs.fatSectors = 3797
+
+	/* Determine the start sector of the cluster */
+	afatfs.clusterStartSector = endOfFATs + afatfs.rootDirectorySectors;	// afatfs.rootDirectorySectors should be 0 on FAT32 system
+	
+	return true;
+}
+
+/**
+ * Determine if the file operation is busy or not
+ * 
+ * Returns:
+ *   	true: if the file operation is busy, otherwise false.
+ */
+static bool afatfs_fileIsBusy(afatfsFilePtr_t file)
+{
+	return file->operation.operation != AFATFS_FILE_OPERATION_NONE;
+}
+
+/**
+ * Reset the in-memory data for the given handle back to the zeroed initial state
+ */
+static void afatfs_initFileHandle(afatfsFilePtr_t file)
+{
+	memset(file, 0, sizeof(*file));
+	
+	file->writeLockedCacheIndex = -1;
+	
+	file->readRetainCacheIndex = -1;
+}
+
+/**
+ * Change the working directory to the directory with the given handle (use fopen).
+ *
+ * Pass NULL for `directory` in order to change to the root directory.
+ *
+ * Returns true on success, false if you should call again later to retry.
+ * After changing into a directory, you handle to that directory may be closed by fclose().
+ */
+bool afatfs_chdir(afatfsFilePtr_t directory)
+{
+	if (afatfs_fileIsBusy(&afatfs.currentDirectory)) {
+		return false;
+	}
+	
+	if (directory) {
+		/* Directory is NOT NULL */
+		if (afatfs_fileIsBusy(directory)) {
+			return false;		// file operation is busy
+		}
+		
+		/* file operation is NOT busy */
+		memcpy(&afatfs.currentDirectory, directory, sizeof(*directory));
+		return true;
+	} else {
+		/* Directory is NULL */
+		/* Initialise file handle */
+		afatfs_initFileHandle(&afatfs.currentDirectory);
+		
+		/* Configure the current directory mode */
+		afatfs.currentDirectory.mode = AFATFS_FILE_MODE_READ | AFATFS_FILE_MODE_WRITE;
+		
+		/* Configure the current directory type */
+		if (afatfs.filesystemType == FAT_FILESYSTEM_TYPE_FAT16) {
+			afatfs.currentDirectory.type = AFATFS_FILE_TYPE_FAT16_ROOT_DIRECTORY;
+		} else {
+			afatfs.currentDirectory.type = AFATFS_FILE_TYPE_DIRECTORY;
+		}
+		
+		/* Configure the first cluster of the current directory */
+		afatfs.currentDirectory.firstCluster = afatfs.rootDirectoryCluster;		// afatfs.rootDirectoryCluster = 2
+		
+		/* Configure the attribute of the current directory */
+		
+		
+		/* Configure the sectorNumberPhysical of the directory entry position to ZERO since the root directory don't have a directory entry to represent themselves */
+		
+		
+		/* Call afatfs_fseek() to seek the current directory */
+		
+	}
 }
 
 static void afatfs_initContinue(void)
@@ -730,12 +948,28 @@ static void afatfs_initContinue(void)
 //				printf("sector[AFATFS_SECTOR_SIZE - 2]: 0x%x, %s, %s, %d\r\n", sector[AFATFS_SECTOR_SIZE - 2], __FILE__, __FUNCTION__, __LINE__);	// 0x55
 //				printf("sector[AFATFS_SECTOR_SIZE - 1]: 0x%x, %s, %s, %d\r\n", sector[AFATFS_SECTOR_SIZE - 1], __FILE__, __FUNCTION__, __LINE__);	// 0xAA
 				if (afatfs_parseMBR(sector)) {
+//					/* afatfs_parseMBR() successful */
 					printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+					afatfs.initPhase = AFATFS_INITIALISATION_READ_VOLUME_ID;
+					goto doMore;
+				} else {
+					/* afatfs_parseMBR failed */
+					afatfs.lastError = AFATFS_ERROR_BAD_MBR;
+					afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_FATAL;
 				}
 			}
 			break;
 		
 		case AFATFS_INITIALISATION_READ_VOLUME_ID:
+			printf("afatfs.partitionStartSector: %u, %s, %s, %d\r\n", afatfs.partitionStartSector, __FILE__, __FUNCTION__, __LINE__);
+			if (afatfs_cacheSector(afatfs.partitionStartSector, &sector, AFATFS_CACHE_READ | AFATFS_CACHE_DISCARDABLE, 0) == AFATFS_OPERATION_SUCCESS) {
+				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+				if (afatfs_parseVolumeID(sector)) {
+					/* If parse volume ID successful, open the root directory */
+					afatfs_chdir(NULL);
+					afatfs.initPhase++;		// increment initPhase to 2, so it should be state AFATFS_INITIALISATION_FREEFILE_CREATE as AFATFS_USE_FREEFILE is defined
+				}
+			}
 			break;
 		
 #ifdef AFATFS_USE_FREEFILE
