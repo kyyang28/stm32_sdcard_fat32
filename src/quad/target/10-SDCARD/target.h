@@ -132,8 +132,12 @@
 #define SDCARD_DETECT_PIN		PC14				// Card Detect PIN
 #define SDCARD_SPI_CS_PIN		SPI2_NSS_PIN		// SPI2_NSS_PIN = PE5
 
-#define SDCARD_DMA_CHANNEL_TX	DMA1_Stream5
+/* Table 42 from <RM0090-STM32F407-Reference_mannual.pdf> */
+#define SDCARD_DMA_CHANNEL_TX	DMA1_Stream5		// DMA1_Stream5 is for SPI3, shouldn't it be DMA1_Stream4 which is utilised for SPI2
+//#define SDCARD_DMA_CHANNEL_TX	DMA1_Stream4		// DMA1_Stream5 is for SPI3, shouldn't it be DMA1_Stream4 which is utilised for SPI2
 #define SDCARD_DMA_CHANNEL		0
+#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG		DMA_FLAG_TCIF5
+//#define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG		DMA_FLAG_TCIF4		// for DMA1_Stream4
 
 /* SPI2 is on the APB1 bus whose clock runs at 84MHz. Divide to under 400kHz for initialisation */
 #define SDCARD_SPI_INITIALISATION_CLOCK_DIVISOR		256		// 84MHz / 256 = 328125 Hz (328.125kHz)

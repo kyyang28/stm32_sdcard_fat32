@@ -1,6 +1,9 @@
 #ifndef __FAT_STANDARD_H
 #define __FAT_STANDARD_H
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #define FAT_FILENAME_LENGTH							11
 #define FAT_SMALLEST_LEGAL_CLUSTER_NUMBER			2
 
@@ -90,5 +93,9 @@ typedef struct fatVolumeID_t {
 		fat32Descriptor_t fat32;
 	}__attribute__((packed)) fatDescriptor;		// add __attribute__((packed)) for KEIL IDE maybe
 }__attribute__((packed)) fatVolumeID_t;
+
+uint32_t fat32_decodeClusterNumber(uint32_t clusterNumber);
+bool fat16_isEndOfChainMarker(uint16_t clusterNumber);
+bool fat32_isEndOfChainMarker(uint32_t clusterNumber);
 
 #endif	// __FAT_STANDARD_H
