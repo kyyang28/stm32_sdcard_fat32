@@ -94,6 +94,21 @@ typedef struct fatVolumeID_t {
 	}__attribute__((packed)) fatDescriptor;		// add __attribute__((packed)) for KEIL IDE maybe
 }__attribute__((packed)) fatVolumeID_t;
 
+typedef struct fatDirectoryEntry_t {
+	char filename[FAT_FILENAME_LENGTH];
+	uint8_t attrib;
+	uint8_t ntReserved;
+	uint8_t creationTimeTenths;
+	uint16_t creationTime;
+	uint16_t creationDate;
+	uint16_t lastAccessDate;
+	uint16_t firstClusterHigh;
+	uint16_t lastWriteTime;
+	uint16_t lastWriteDate;
+	uint16_t firstClusterLow;
+	uint32_t fileSize;
+}__attribute__((packed)) fatDirectoryEntry_t;
+
 uint32_t fat32_decodeClusterNumber(uint32_t clusterNumber);
 bool fat16_isEndOfChainMarker(uint16_t clusterNumber);
 bool fat32_isEndOfChainMarker(uint32_t clusterNumber);

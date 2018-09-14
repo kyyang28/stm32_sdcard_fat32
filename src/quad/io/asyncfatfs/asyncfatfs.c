@@ -13,6 +13,11 @@
 #define AFATFS_SECTOR_SIZE							512
 #define AFATFS_NUM_FATS								2
 
+#define AFATFS_FAT32_FAT_ENTRIES_PER_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(uint32_t))		// 512 / 4 = 128
+#define AFATFS_FAT16_FAT_ENTRIES_PER_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(uint16_t))		// 512 / 2 = 256
+
+#define AFATFS_FILES_PER_DIRECTORY_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(fatDirectoryEntry_t))
+
 #define AFATFS_NUM_CACHE_SECTORS					8
 
 #define AFATFS_MAX_OPEN_FILES						3
@@ -45,6 +50,11 @@
  *	for efficient fragment-free allocation
  */
 #define AFATFS_USE_FREEFILE
+
+/* Filename in 8.3 format */
+#define AFATFS_FREESPACE_FILENAME					"FREESPACE.E"
+
+#define AFATFS_INTROSPEC_LOG_FILENAME				"ASYNCFAT.LOG"
 
 /* +-------------------------------------------------------------------------------------------+ */
 /* +                                         FILE MODE                                         + */
@@ -112,8 +122,8 @@ typedef enum {
 }afatfsInitialisationPhase_e;
 
 typedef enum {
-	AFATFS_FREE_SPACE_SEARCH_PHASE_FIND_HOLE,
-	AFATFS_FREE_SPACE_SEARCH_PHASE_GROW_HOLE
+	AFATFS_FREE_SPACE_SEARCH_PHASE_FIND_HOLE,		// 0
+	AFATFS_FREE_SPACE_SEARCH_PHASE_GROW_HOLE		// 1
 }afatfsFreeSpaceSearchPhase_e;
 
 typedef struct afatfsFreeSpaceSearch_t {
@@ -504,6 +514,11 @@ static bool afatfs_assert(bool condition)
 static uint8_t *afatfs_cacheSectorGetMemory(int cacheEntryIndex)
 {
 	return afatfs.cache + cacheEntryIndex * AFATFS_SECTOR_SIZE;		// AFATFS_SECTOR_SIZE = 512
+}
+
+static uint32_t afatfs_fatEntriesPerSector(void)
+{
+	return afatfs.filesystemType == FAT_FILESYSTEM_TYPE_FAT32 ? AFATFS_FAT32_FAT_ENTRIES_PER_SECTOR : AFATFS_FAT16_FAT_ENTRIES_PER_SECTOR;
 }
 
 /**
@@ -1444,6 +1459,62 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 	}
 }
 
+/**
+ * Open (or create) a file in the CWD with the given filename
+ *
+ * file				- Memory location to store the newly opened file details
+ * name				- Filename in "name.ext" format. No path
+ * attrib			- FAT file attributes to give the file (if created)
+ * fileMode			- Bitset of AFATFS_FILE_MODE_* constants. Including AFATFS_FILE_MODE_CREATE to create the file if
+ *					  it does not exist.
+ * callback			- Called when the operation is completed
+ */
+static afatfsFilePtr_t afatfs_createFile(afatfsFilePtr_t file, const char *name, uint8_t attrib, uint8_t fileMode, afatfsFileCallback_t callback)
+{
+	afatfsCreateFile_t *opState = &file->operation.state.createFile;
+	
+	/* Initialise file handle */
+	afatfs_initFileHandle(file);
+	
+	/* Queued the operation to finish the file creation */
+	file->operation.operation = AFATFS_FILE_OPERATION_CREATE_FILE;
+}
+
+/**
+ * Call to set up the initial state for finding the largest block of free space on the device whose corresponding FAT
+ * sectors are themselves entirely free space (so the free space has dedicated FAT sectors of its own).
+ */
+static void afatfs_findLargestContiguousFreeBlockBegin(void)
+{
+	/* The first FAT sector has two reserved entries, so it isn't eligible for this search.
+	 * Start at the next FAT sector.
+	 */
+	afatfs.initState.freeSpaceSearch.candidateStart = afatfs_fatEntriesPerSector();
+	afatfs.initState.freeSpaceSearch.candidateEnd = afatfs.initState.freeSpaceSearch.candidateStart;
+	afatfs.initState.freeSpaceSearch.bestGapStart = 0;
+	afatfs.initState.freeSpaceSearch.bestGapLength = 0;
+	afatfs.initState.freeSpaceSearch.phase = AFATFS_FREE_SPACE_SEARCH_PHASE_FIND_HOLE;
+}
+
+static void afatfs_freeFileCreated(afatfsFile_t *file)
+{
+	if (file) {
+		/* Did the freefile already have allocated space? */
+		if (file->logicalSize > 0) {
+			/* We've completed freefile init, move on to the next init phase */
+			afatfs.initPhase = AFATFS_INITIALISATION_FREEFILE_LAST + 1;
+		} else {
+			/* Allocate clusters for the freefile */
+			afatfs_findLargestContiguousFreeBlockBegin();
+			afatfs.initPhase = AFATFS_INITIALISATION_FREEFILE_FAT_SEARCH;
+		}
+	} else {
+		/* Failed to allocate an entry */
+		afatfs.lastError = AFATFS_ERROR_GENERIC;
+		afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_FATAL;
+	}
+}
+
 static void afatfs_initContinue(void)
 {
 #ifdef AFATFS_USE_FREEFILE
@@ -1485,6 +1556,10 @@ static void afatfs_initContinue(void)
 					 */
 					afatfs_chdir(NULL);		// Initialise afatfsFile_t structure
 					afatfs.initPhase++;		// increment initPhase to 2, so it should be state AFATFS_INITIALISATION_FREEFILE_CREATE as AFATFS_USE_FREEFILE is defined
+				} else {
+					/* afatfs_parseVolumeID failed  */
+					afatfs.lastError = AFATFS_ERROR_BAD_FILESYSTEM_HEADER;
+					afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_FATAL;
 				}
 			}
 			break;
@@ -1492,7 +1567,10 @@ static void afatfs_initContinue(void)
 #ifdef AFATFS_USE_FREEFILE
 		case AFATFS_INITIALISATION_FREEFILE_CREATE:
 //			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
-			
+			afatfs.initPhase = AFATFS_INITIALISATION_FREEFILE_CREATING;
+		
+			afatfs_createFile(&afatfs.freeFile, AFATFS_FREESPACE_FILENAME, FAT_FILE_ATTRIBUTE_SYSTEM | FAT_FILE_ATTRIBUTE_READ_ONLY,
+					AFATFS_FILE_MODE_CREATE | AFATFS_FILE_MODE_RETAIN_DIRECTORY, afatfs_freeFileCreated);
 			break;
 		
 		case AFATFS_INITIALISATION_FREEFILE_CREATING:
