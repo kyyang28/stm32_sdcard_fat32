@@ -7,6 +7,8 @@
 #define FAT_FILENAME_LENGTH							11
 #define FAT_SMALLEST_LEGAL_CLUSTER_NUMBER			2
 
+#define FAT_DELETED_FILE_MARKER 					0xE5
+
 #define MBR_PARTITION_TYPE_FAT16					0x06
 #define MBR_PARTITION_TYPE_FAT32					0x0B
 #define MBR_PARTITION_TYPE_FAT32_LBA				0x0C
@@ -95,22 +97,27 @@ typedef struct fatVolumeID_t {
 }__attribute__((packed)) fatVolumeID_t;
 
 typedef struct fatDirectoryEntry_t {
-	char filename[FAT_FILENAME_LENGTH];
-	uint8_t attrib;
-	uint8_t ntReserved;
-	uint8_t creationTimeTenths;
-	uint16_t creationTime;
-	uint16_t creationDate;
-	uint16_t lastAccessDate;
-	uint16_t firstClusterHigh;
-	uint16_t lastWriteTime;
-	uint16_t lastWriteDate;
-	uint16_t firstClusterLow;
-	uint32_t fileSize;
-}__attribute__((packed)) fatDirectoryEntry_t;
+	char filename[FAT_FILENAME_LENGTH];		// 11 bytes
+	uint8_t attrib;							// 1 byte
+	uint8_t ntReserved;						// 1 byte
+	uint8_t creationTimeTenths;				// 1 byte
+	uint16_t creationTime;					// 2 bytes
+	uint16_t creationDate;					// 2 bytes
+	uint16_t lastAccessDate;				// 2 bytes
+	uint16_t firstClusterHigh;				// 2 bytes
+	uint16_t lastWriteTime;					// 2 bytes
+	uint16_t lastWriteDate;					// 2 bytes
+	uint16_t firstClusterLow;				// 2 bytes
+	uint32_t fileSize;						// 4 bytes
+}__attribute__((packed)) fatDirectoryEntry_t;	// total: 11 + 1 + 1 + 1 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 4 = 32
+
+bool fat_isDirectoryEntryTerminator(fatDirectoryEntry_t *entry);
+
+bool fat_isDirectoryEntryEmpty(fatDirectoryEntry_t *entry);
 
 uint32_t fat32_decodeClusterNumber(uint32_t clusterNumber);
 bool fat16_isEndOfChainMarker(uint16_t clusterNumber);
 bool fat32_isEndOfChainMarker(uint32_t clusterNumber);
+void fat_convertFilenameToFATStyle(const char *filename, uint8_t *fatFilename);
 
 #endif	// __FAT_STANDARD_H

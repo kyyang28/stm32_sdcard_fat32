@@ -87,3 +87,4 @@
 .\objects\main.o: .\src\quad\fc\fc_tasks.h
 .\objects\main.o: .\src\quad\build\debug.h
 .\objects\main.o: .\src\quad\io\asyncfatfs\asyncfatfs.h
+.\objects\main.o: .\src\quad\io\asyncfatfs\fat_standard.h

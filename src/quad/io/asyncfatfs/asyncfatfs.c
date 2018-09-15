@@ -3,8 +3,8 @@
 #include <string.h>				// memcpy
 
 #include "sdcard.h"				// including stdint.h, stdbool.h
-#include "asyncfatfs.h"
-#include "fat_standard.h"
+#include "asyncfatfs.h"			// including fat_standard.h
+//#include "fat_standard.h"
 #include "maths.h"				// MIN, MAX, etc
 
 /* 	FAT filesystems are allowed to differ from these parameters, but we choose not to support those
@@ -16,7 +16,7 @@
 #define AFATFS_FAT32_FAT_ENTRIES_PER_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(uint32_t))		// 512 / 4 = 128
 #define AFATFS_FAT16_FAT_ENTRIES_PER_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(uint16_t))		// 512 / 2 = 256
 
-#define AFATFS_FILES_PER_DIRECTORY_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(fatDirectoryEntry_t))
+#define AFATFS_FILES_PER_DIRECTORY_SECTOR			(AFATFS_SECTOR_SIZE / sizeof(fatDirectoryEntry_t))	// 512 / 32 = 16
 
 #define AFATFS_NUM_CACHE_SECTORS					8
 
@@ -146,6 +146,14 @@ typedef enum {
 	AFATFS_CACHE_STATE_WRITING,			// 3
 	AFATFS_CACHE_STATE_DIRTY			// 4
 }afatfsCacheBlockState_e;
+
+enum {
+	AFATFS_CREATEFILE_PHASE_INITIAL = 0,		// 0
+	AFATFS_CREATEFILE_PHASE_FIND_FILE,			// 1
+	AFATFS_CREATEFILE_PHASE_CREATE_NEW_FILE,	// 2
+	AFATFS_CREATEFILE_PHASE_SUCCESS,			// 3
+	AFATFS_CREATEFILE_PHASE_FAILURE				// 4
+};
 
 typedef struct afatfsCacheBlockDescriptor_t {
 	/* The physical sector index on disk that this cached block corresponds to */
@@ -486,6 +494,17 @@ static bool isPowerOfTwo(unsigned int x)
 	return ((x != 0) && ((x & (~x + 1)) == x));
 }
 
+static uint32_t roundUpTo(uint32_t value, uint32_t rounding)
+{
+	uint32_t remainder = value % rounding;
+	
+	if (remainder > 0) {
+		value += rounding - remainder;
+	}
+	
+	return value;
+}
+
 /**
  * Check for conditions that should always be true (and if otherwise mean a bug or a corrupt filesystem).
  *
@@ -516,6 +535,15 @@ static uint8_t *afatfs_cacheSectorGetMemory(int cacheEntryIndex)
 	return afatfs.cache + cacheEntryIndex * AFATFS_SECTOR_SIZE;		// AFATFS_SECTOR_SIZE = 512
 }
 
+/**
+ * The number of FAT table entries that fit within one AFATFS sector size.
+ *
+ * Note that this is the same as the number of clusters in an AFATFS supercluster.
+ *
+ * Returns:
+ * 		AFATFS_FAT32_FAT_ENTRIES_PER_SECTOR = 512 / 4 = 128
+ * 		AFATFS_FAT16_FAT_ENTRIES_PER_SECTOR = 512 / 2 = 256
+ */
 static uint32_t afatfs_fatEntriesPerSector(void)
 {
 	return afatfs.filesystemType == FAT_FILESYSTEM_TYPE_FAT32 ? AFATFS_FAT32_FAT_ENTRIES_PER_SECTOR : AFATFS_FAT16_FAT_ENTRIES_PER_SECTOR;
@@ -1092,7 +1120,7 @@ static void afatfs_fileUnlockCacheSector(afatfsFilePtr_t file)
  */
 static uint32_t afatfs_clusterSize(void)
 {
-	return afatfs.sectorsPerCluster * AFATFS_SECTOR_SIZE;		// 64 * 512 = 32768
+	return afatfs.sectorsPerCluster * AFATFS_SECTOR_SIZE;		// clusterSize = 64 * 512 = 32768
 }
 
 /**
@@ -1460,6 +1488,357 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 }
 
 /**
+ * Initialise the finder so that the first call with the directory to findNext() will return the first file in the directory
+ */
+void afatfs_findFirst(afatfsFilePtr_t directory, afatfsFinder_t *finder)
+{
+	afatfs_fseek(directory, 0, AFATFS_SEEK_SET);
+	finder->entryIndex = -1;
+}
+
+/**
+ * Given a byte offset within a file, return the index of the sector within the cluster it belongs to.
+ */
+static uint32_t afatfs_sectorIndexInCluster(uint32_t byteOffset)
+{
+	return afatfs_byteIndexInCluster(byteOffset) / AFATFS_SECTOR_SIZE;
+}
+
+static uint32_t afatfs_fileClusterToPhysical(uint32_t clusterNumber, uint32_t sectorIndex)
+{
+//	printf("afatfs.clusterStartSector: %u\r\n", afatfs.clusterStartSector);
+//	printf("afatfs.sectorsPerCluster: %u\r\n", afatfs.sectorsPerCluster);
+//	printf("sectorIndex: %u\r\n", sectorIndex);
+	return afatfs.clusterStartSector + (clusterNumber - 2) * afatfs.sectorsPerCluster + sectorIndex;
+}
+
+static uint32_t afatfs_fileGetCursorPhysicalSector(afatfsFilePtr_t file)
+{
+//	printf("file->type: %u\r\n", file->type);			// file->type = 3 (AFATFS_FILE_TYPE_DIRECTORY)
+	if (file->type == AFATFS_FILE_TYPE_FAT16_ROOT_DIRECTORY) {
+		return afatfs.fatStartSector + AFATFS_NUM_FATS * afatfs.fatSectors + file->cursorOffset / AFATFS_SECTOR_SIZE;
+	} else {
+		/* FAT32 */
+//		printf("file->cursorOffset: %u\r\n", file->cursorOffset);			// file->cursorOffset = 0
+		uint32_t cursorSectorInCluster = afatfs_sectorIndexInCluster(file->cursorOffset);
+//		printf("cursorSectorInCluster: %u\r\n", cursorSectorInCluster);		// cursorSectorInCluster = 0
+//		printf("file->cursorCluster: %u\r\n", file->cursorCluster);		// file->cursorCluster = 0
+		return afatfs_fileClusterToPhysical(file->cursorCluster, cursorSectorInCluster);
+	}
+}
+
+static int afatfs_getCacheDescriptorIndexForBuffer(uint8_t *memory)
+{
+	int index = (memory - afatfs.cache) / AFATFS_SECTOR_SIZE;
+	
+	if (afatfs_assert(index >= 0 && index < AFATFS_NUM_CACHE_SECTORS)) {
+		return index;
+	} else {
+		return -1;
+	}
+}
+
+/**
+ * Take a look on the sector at the current file cursor position.
+ *
+ * Returns a pointer to the sector buffer if successful, or NULL if at the end of file (check afatfs_isEndOfAllocatedFile())
+ * or the sector has not yet been read in from disk.
+ */
+static uint8_t* afatfs_fileRetainCursorSectorForRead(afatfsFilePtr_t file)
+{
+	uint8_t *result;
+	
+	uint32_t physicalSector = afatfs_fileGetCursorPhysicalSector(file);
+	
+//	printf("physicalSector: %u\r\n", physicalSector);			// physicalSector = 16384 - 2 * 64 = 16256
+	
+	/**
+	 * If we've already got a locked sector then we can assume that was the same one that's the cursor (because this 
+	 * cache is invalidated when crossing a sector boundary)
+	 */
+	if (file->readRetainCacheIndex != -1) {
+		if (!afatfs_assert(physicalSector == afatfs.cacheDescriptor[file->readRetainCacheIndex].sectorIndex)) {
+			return NULL;
+		}
+		
+		result = afatfs_cacheSectorGetMemory(file->readRetainCacheIndex);
+	} else {
+		if (afatfs_isEndOfAllocatedFile(file)) {
+			return NULL;
+		}
+		
+		/* We never read the root sector using files */
+		afatfs_assert(physicalSector > 0);
+		
+		afatfsOperationStatus_e status = afatfs_cacheSector(
+			physicalSector,
+			&result,
+			AFATFS_CACHE_READ | AFATFS_CACHE_RETAIN,
+			0
+		);
+		
+		if (status != AFATFS_OPERATION_SUCCESS) {
+			/* Sector not ready for read */
+			return NULL;
+		}
+		
+		file->readRetainCacheIndex = afatfs_getCacheDescriptorIndexForBuffer(result);
+	}
+	
+	return result;
+}
+
+/**
+ * Attempt to advance the directory pointer `finder` to the next entry in the directory.
+ * 
+ * Returns:
+ *		AFATFS_OPERATION_SUCCESS		- A pointer to the next directory entry has been loaded into *dirEntry.
+ *										  If the directory was exhausted then *dirEntry will be set to NULL.
+ *		AFATFS_OPERATION_IN_PROGRESS	- The disk is busy. The pointer is not advanced, call again later to retry
+ */
+afatfsOperationStatus_e afatfs_findNext(afatfsFilePtr_t directory, afatfsFinder_t *finder, fatDirectoryEntry_t **dirEntry)
+{
+	uint8_t *sector;
+	
+//	printf("AFATFS_FILES_PER_DIRECTORY_SECTOR: %u\r\n", AFATFS_FILES_PER_DIRECTORY_SECTOR);	// AFATFS_FILES_PER_DIRECTORY_SECTOR = 16
+//	printf("finder->entryIndex: %d\r\n", finder->entryIndex);
+	
+	if (finder->entryIndex == AFATFS_FILES_PER_DIRECTORY_SECTOR - 1) {
+		if (afatfs_fseekAtomic(directory, AFATFS_SECTOR_SIZE)) {
+			finder->entryIndex = -1;
+			/* Fall through to read the first entry of that new sector */
+		} else {
+			return AFATFS_OPERATION_IN_PROGRESS;
+		}
+	}
+	
+	sector = afatfs_fileRetainCursorSectorForRead(directory);
+	
+//	printf("sector: 0x%x\r\n", (uint32_t)sector);
+	
+	if (sector) {
+		finder->entryIndex++;
+		
+		*dirEntry = (fatDirectoryEntry_t *)sector + finder->entryIndex;
+		
+		finder->sectorNumberPhysical = afatfs_fileGetCursorPhysicalSector(directory);
+		
+		return AFATFS_OPERATION_SUCCESS;
+	} else {
+		if (afatfs_isEndOfAllocatedFile(directory)) {
+			*dirEntry = NULL;
+			return AFATFS_OPERATION_SUCCESS;
+		}
+		
+		return AFATFS_OPERATION_IN_PROGRESS;
+	}
+}
+
+/**
+ * Release resources associated with a find operation. Calling this more than once is harmless.
+ */
+void afatfs_findLast(afatfsFilePtr_t directory)
+{
+	afatfs_fileUnlockCacheSector(directory);
+}
+
+/**
+ * Load details from the given FAT directory entry into the file.
+ */
+static void afatfs_fileLoadDirectoryEntry(afatfsFile_t *file, fatDirectoryEntry_t *entry)
+{
+	printf("entry->firstClusterHigh: %u\r\n", entry->firstClusterHigh);
+	printf("entry->firstClusterLow: %u\r\n", entry->firstClusterLow);
+	file->firstCluster = (uint32_t) (entry->firstClusterHigh << 16) | entry->firstClusterLow;
+	printf("file->firstCluster: %u\r\n", file->firstCluster);
+	file->logicalSize = entry->fileSize;
+	printf("file->logicalSize: %u\r\n", file->logicalSize);
+	file->physicalSize = roundUpTo(entry->fileSize, afatfs_clusterSize());
+	printf("file->physicalSize: %u\r\n", file->physicalSize);
+	file->attrib = entry->attrib;
+	printf("file->attrib: %u\r\n", file->attrib);
+}
+
+static afatfsCacheBlockDescriptor_t *afatfs_getCacheDescriptorForBuffer(uint8_t *memory)
+{
+	return afatfs.cacheDescriptor + afatfs_getCacheDescriptorIndexForBuffer(memory);
+}
+
+/**
+ * Queue an operation to add a cluster to a sub-directory.
+ * 
+ * The new cluster is zero-filled. "." and ".." entries are added if it is the first cluster of a new subdirectory.
+ *
+ * The directory must not be busy, otherwise AFATFS_OPERATION_FAILURE is returned immediately.
+ *
+ * The directory's cursor must lie at the end of the directory file (i.e. isEndOfAllocatedFile() would return true).
+ *
+ * You must provide parentDirectory if this is the first extension to the subdirectory, otherwise pass NULL for that argument.
+ */
+static afatfsOperationStatus_e afatfs_extendSubdirectory(afatfsFile_t *directory, afatfsFilePtr_t parentDirectory, afatfsFileCallback_t callback)
+{
+	/* FAT16 root directories cannot be extended */
+	if (directory->type == AFATFS_FILE_TYPE_FAT16_ROOT_DIRECTORY || afatfs_fileIsBusy(directory)) {
+		return AFATFS_OPERATION_FAILURE;
+	}
+	
+	/*
+	 * We'll assume that we are never asked to append the first cluster of a root directory, since any
+	 * reasonably-formatted volume should have a root!
+	 */
+	afatfsExtendSubdirectory_t *opState = &directory->operation.state.extendSubdirectory;
+	
+	directory->operation.operation = AFATFS_FILE_OPERATION_EXTEND_SUBDIRECTORY;		// AFATFS_FILE_OPERATION_EXTEND_SUBDIRECTORY = 9
+	
+	opState->phase = AFATFS_EXTEND_SUBDIRECTORY_PHASE_INITIAL;		// AFATFS_EXTEND_SUBDIRECTORY_PHASE_INITIAL = 0
+	
+	opState->parentDirectoryCluster = parentDirectory ? parentDirectory->firstCluster : 0;
+	
+	opState->callback = callback;
+}
+
+/**
+ * Allocate space for a new directory entry to be written, store the position of that entry in the finder, and set
+ * the *dirEntry pointer to point to the entry within the cached FAT sector. This pointer's lifetime is only as good 
+ * as the life of the cache, so don't dawdle.
+ *
+ * Before the first call to this function, call afatfs_findFirst() on the directory.
+ *
+ * The directory sector in the cache is marked as dirty, so any changes written through to the entry will be flushed out
+ * in a subsequent poll cycle.
+ *
+ * Returns:
+ *		AFATFS_OPERATION_IN_PROGRESS		- Call again later to continue.
+ *		AFATFS_OPERATION_SUCCESS			- Entry has been inserted and *dirEntry and *finder have been updated.
+ *		AFATFS_OPERATION_FAILURE			- When the directory is full.
+ */
+static afatfsOperationStatus_e afatfs_allocateDirectoryEntry(afatfsFilePtr_t directory, fatDirectoryEntry_t **dirEntry, afatfsFinder_t *finder)
+{
+	afatfsOperationStatus_e result;
+	
+	if (afatfs_fileIsBusy(directory)) {
+		return AFATFS_OPERATION_IN_PROGRESS;
+	}
+	
+	while ((result = afatfs_findNext(directory, finder, dirEntry)) == AFATFS_OPERATION_SUCCESS) {
+		if (*dirEntry) {
+			if (fat_isDirectoryEntryEmpty(*dirEntry) || fat_isDirectoryEntryTerminator(*dirEntry)) {
+				afatfs_cacheSectorMarkDirty(afatfs_getCacheDescriptorForBuffer((uint8_t *)*dirEntry));
+				
+				afatfs_findLast(directory);
+				return AFATFS_OPERATION_SUCCESS;
+			}
+		} else {
+			/* Need to extend directory size by adding a cluster */
+			result = afatfs_extendSubdirectory(directory, NULL, NULL);
+			
+			if (result == AFATFS_OPERATION_SUCCESS) {
+				/* Continue the search in the newly-extended directory */
+				continue;
+			} else {
+				/* The status (in progress or failure) of extending the directory becomes our status */
+				break;
+			}
+		}
+	}
+	
+	return result;
+}
+
+static void afatfs_createFileContinue(afatfsFile_t *file)
+{
+	afatfsCreateFile_t *opState = &file->operation.state.createFile;
+	fatDirectoryEntry_t *entry;
+	afatfsOperationStatus_e status;
+	
+	doMore:
+	
+	switch (opState->phase) {
+		case AFATFS_CREATEFILE_PHASE_INITIAL:
+//			printf("afatfs.currentDirectory.type: %u\r\n", afatfs.currentDirectory.type);			// afatfs.currentDirectory.type = AFATFS_FILE_TYPE_DIRECTORY (3)
+//			printf("afatfs.currentDirectory.attrib: %u\r\n", afatfs.currentDirectory.attrib);		// afatfs.currentDirectory.attrib = FAT_FILE_ATTRIBUTE_DIRECTORY (0x10, 16)
+//			printf("afatfs.currentDirectory.cursorCluster: %u\r\n", afatfs.currentDirectory.cursorCluster);	// afatfs.currentDirectory.cursorCluster = 0
+//			printf("afatfs.currentDirectory.cursorOffset: %u\r\n", afatfs.currentDirectory.cursorOffset);	// afatfs.currentDirectory.cursorOffset = 0
+//			printf("afatfs.currentDirectory.cursorPreviousCluster: %u\r\n", afatfs.currentDirectory.cursorPreviousCluster);	// afatfs.currentDirectory.cursorPreviousCluster = 0
+//			printf("afatfs.currentDirectory.directoryEntryPos.entryIndex: %d\r\n", afatfs.currentDirectory.directoryEntryPos.entryIndex);	// afatfs.currentDirectory.directoryEntryPos.entryIndex = 0
+//			printf("afatfs.currentDirectory.directoryEntryPos.sectorNumberPhysical: %u\r\n", afatfs.currentDirectory.directoryEntryPos.sectorNumberPhysical);	// sectorNumberPhysical = 0
+//			printf("afatfs.currentDirectory.firstCluster: %u\r\n", afatfs.currentDirectory.firstCluster);	// afatfs.currentDirectory.firstCluster = 2
+//			printf("afatfs.currentDirectory.logicalSize: %u\r\n", afatfs.currentDirectory.logicalSize);		// afatfs.currentDirectory.logicalSize = 0
+//			printf("afatfs.currentDirectory.mode: %u\r\n", afatfs.currentDirectory.mode);	// afatfs.currentDirectory.mode = AFATFS_FILE_MODE_READ(1) | AFATFS_FILE_MODE_WRITE(2) = 1 | 2 = 3
+//			printf("afatfs.currentDirectory.physicalSize: %u\r\n", afatfs.currentDirectory.physicalSize);	// afatfs.currentDirectory.physicalSize = 0
+//			printf("afatfs.currentDirectory.operation.operation: %u\r\n", afatfs.currentDirectory.operation.operation);	// afatfs.currentDirectory.operation.operation = 0
+//			printf("afatfs.currentDirectory.operation.state.createFile.filename: %s\r\n", afatfs.currentDirectory.operation.state.createFile.filename);	// currentDirectory's filename = NULL
+																																						// freeFile's filename = FREESPACE.E
+//			printf("afatfs.currentDirectory.operation.state.createFile.phase: %u\r\n", afatfs.currentDirectory.operation.state.createFile.phase);	// phase = AFATFS_CREATEFILE_PHASE_INITIAL (0)
+			afatfs_findFirst(&afatfs.currentDirectory, &file->directoryEntryPos);
+//			printf("file->directoryEntryPos.entryIndex: %d\r\n", file->directoryEntryPos.entryIndex);	// (int8_t) file->directoryEntryPos.entryIndex = -1
+			opState->phase = AFATFS_CREATEFILE_PHASE_FIND_FILE;
+			goto doMore;
+			break;
+		
+		case AFATFS_CREATEFILE_PHASE_FIND_FILE:
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			do {
+				status = afatfs_findNext(&afatfs.currentDirectory, &file->directoryEntryPos, &entry);
+//				printf("status: %u\r\n", status);
+				
+				switch (status) {
+					case AFATFS_OPERATION_SUCCESS:
+						/* Is this the last entry in the directory */
+						if (entry == NULL || fat_isDirectoryEntryTerminator(entry)) {
+							afatfs_findLast(&afatfs.currentDirectory);
+							
+//							printf("file->mode: %u\r\n", file->mode);	// file->mode = 48 (0x30) (AFATFS_FILE_MODE_CREATE | AFATFS_FILE_MODE_RETAIN_DIRECTORY)
+							
+							if ((file->mode & AFATFS_FILE_MODE_CREATE) != 0) {
+								/* The file didn't already exist, so we can create it. Allocate a new directory entry */
+								afatfs_findFirst(&afatfs.currentDirectory, &file->directoryEntryPos);
+								
+								opState->phase = AFATFS_CREATEFILE_PHASE_CREATE_NEW_FILE;
+								
+								goto doMore;
+							} else {
+								/* File not found */
+								opState->phase = AFATFS_CREATEFILE_PHASE_FAILURE;
+								
+								goto doMore;
+							}
+						} else if (strncmp(entry->filename, (char *)opState->filename, FAT_FILENAME_LENGTH) == 0) {
+							/* We found a file with this name! */
+							afatfs_fileLoadDirectoryEntry(file, entry);
+							
+							afatfs_findLast(&afatfs.currentDirectory);
+							
+							opState->phase = AFATFS_CREATEFILE_PHASE_SUCCESS;
+							
+							goto doMore;
+						}	// else this entry doesn't match, fall through and continue the search.
+						break;
+					
+					case AFATFS_OPERATION_FAILURE:
+						break;
+					
+					case AFATFS_OPERATION_IN_PROGRESS:
+						;
+				}
+			} while (status == AFATFS_OPERATION_SUCCESS);
+			
+			break;
+		
+		case AFATFS_CREATEFILE_PHASE_CREATE_NEW_FILE:
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			status = afatfs_allocateDirectoryEntry(&afatfs.currentDirectory, &entry, &file->directoryEntryPos);
+			break;
+		
+		case AFATFS_CREATEFILE_PHASE_SUCCESS:
+			break;
+		
+		case AFATFS_CREATEFILE_PHASE_FAILURE:
+			break;
+	}
+}
+
+/**
  * Open (or create) a file in the CWD with the given filename
  *
  * file				- Memory location to store the newly opened file details
@@ -1471,13 +1850,75 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
  */
 static afatfsFilePtr_t afatfs_createFile(afatfsFilePtr_t file, const char *name, uint8_t attrib, uint8_t fileMode, afatfsFileCallback_t callback)
 {
+	/**
+	 * INFO: Initialise file (afatfs.freeFile) members
+	 */
 	afatfsCreateFile_t *opState = &file->operation.state.createFile;
 	
-	/* Initialise file handle */
+	/* Initialise file handle
+	 *
+	 * file->writeLockedCacheIndex = -1
+	 * file->readRetainCacheIndex = -1
+	 */
 	afatfs_initFileHandle(file);
+	
+//	printf("writeLockedCacheIndex: %d\r\n", file->writeLockedCacheIndex);	// file->writeLockedCacheIndex = -1
+//	printf("readRetainCacheIndex: %d\r\n", file->readRetainCacheIndex);		// file->readRetainCacheIndex = -2
 	
 	/* Queued the operation to finish the file creation */
 	file->operation.operation = AFATFS_FILE_OPERATION_CREATE_FILE;
+
+//	printf("file->operation.operation: %u\r\n", file->operation.operation);	// file->operation.operation = AFATFS_FILE_OPERATION_CREATE_FILE (1)
+	
+	/* Initialise file mode */
+	file->mode = fileMode;
+	
+//	printf("file->mode: 0x%x\r\n", file->mode);		// file->mode = 48 (0x30)
+	
+	/* Initialise file's firstCluster, physicalSize, logicalSize, attrib and type */
+	if (strcmp(name, ".") == 0) {
+		file->firstCluster = afatfs.currentDirectory.firstCluster;
+		file->physicalSize = afatfs.currentDirectory.physicalSize;
+		file->logicalSize = afatfs.currentDirectory.logicalSize;
+		file->attrib = afatfs.currentDirectory.attrib;
+		file->type = afatfs.currentDirectory.type;
+//		printf("file->firstCluster: %u\r\n", file->firstCluster);
+//		printf("file->physicalSize: %u\r\n", file->physicalSize);
+//		printf("file->logicalSize: %u\r\n", file->logicalSize);
+//		printf("file->attrib: %u\r\n", file->attrib);
+//		printf("file->type: %u\r\n", file->type);
+	} else {
+//		printf("name: %s\r\n", name);								// name = "FREESPACE.E"
+		fat_convertFilenameToFATStyle(name, opState->filename);
+//		printf("opState->filename: %s\r\n", opState->filename);		// opState->filename = "FREESPACE.E"
+//		printf("afatfs.freefile.operation.state.createFile.filename: %s\r\n", afatfs.freeFile.operation.state.createFile.filename);	// filename = 
+		file->attrib = attrib;
+		
+//		printf("file->attrib: %u\r\n", file->attrib);  // file->attrib = 0x1(FAT_FILE_ATTRIBUTE_READ_ONLY) | 0x4 (FAT_FILE_ATTRIBUTE_READ_ONLY) = 0x5
+		
+		if ((attrib & FAT_FILE_ATTRIBUTE_DIRECTORY) != 0) {
+			file->type = AFATFS_FILE_TYPE_DIRECTORY;
+//			printf("file->type: %u\r\n", file->type);
+		} else {
+			file->type = AFATFS_FILE_TYPE_NORMAL;
+//			printf("file->type: %u\r\n", file->type);		// file->type = AFATFS_FILE_TYPE_NORMAL (1)
+		}
+	}
+	
+	/* Initialise file->operation.state.createFile.callback = callback */
+	opState->callback = callback;
+	
+	if (strcmp(name, ".") == 0) {
+		/* Since we already have the directory entry details, we can skip straight to the final operations required */
+		opState->phase = AFATFS_CREATEFILE_PHASE_SUCCESS;		// AFATFS_CREATEFILE_PHASE_SUCCESS = 3
+	} else {
+		opState->phase = AFATFS_CREATEFILE_PHASE_INITIAL;		// AFATFS_CREATEFILE_PHASE_INITIAL = 0
+//		printf("opState->phase: %u\r\n", opState->phase);
+	}
+	
+	afatfs_createFileContinue(file);
+	
+	return file;
 }
 
 /**

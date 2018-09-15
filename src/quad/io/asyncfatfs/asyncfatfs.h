@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "fat_standard.h"
+
 typedef struct afatfsFile_t *afatfsFilePtr_t;
 
 typedef enum {
@@ -17,6 +19,8 @@ typedef struct afatfsDirEntryPointer_t {
 	uint32_t sectorNumberPhysical;
 	int16_t entryIndex;
 }afatfsDirEntryPointer_t;
+
+typedef afatfsDirEntryPointer_t afatfsFinder_t;
 
 typedef enum {
 	AFATFS_OPERATION_IN_PROGRESS,		// 0
@@ -41,6 +45,10 @@ typedef void (*afatfsFileCallback_t)(afatfsFilePtr_t file);
 typedef void (*afatfsCallback_t)(void);
 
 bool afatfs_chdir(afatfsFilePtr_t dirHandle);
+
+void afatfs_findFirst(afatfsFilePtr_t directory, afatfsFinder_t *finder);
+afatfsOperationStatus_e afatfs_findNext(afatfsFilePtr_t directory, afatfsFinder_t *finder, fatDirectoryEntry_t **dirEntry);
+void afatfs_findLast(afatfsFilePtr_t directory);
 
 void afatfs_init(void);
 bool afatfs_flush(void);
