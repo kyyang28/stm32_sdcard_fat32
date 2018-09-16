@@ -32,6 +32,12 @@ bool fat32_isEndOfChainMarker(uint32_t clusterNumber)
 	return clusterNumber >= 0x0FFFFFF8;
 }
 
+/* fat32 needs fat32_decodeClusterNumber() applied first. */
+bool fat_isFreeSpace(uint32_t clusterNumber)
+{
+    return clusterNumber == 0;
+}
+
 /**
  * Convert the given "prefix.ext" style filename to the FAT format to be stored on disk.
  *

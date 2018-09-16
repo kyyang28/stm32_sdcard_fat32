@@ -34,6 +34,10 @@
 #define FAT_FILE_ATTRIBUTE_DIRECTORY				0x10
 #define FAT_FILE_ATTRIBUTE_ARCHIVE					0x20
 
+/* According to spec <fatgen103.pdf>, p25 */
+#define FAT_MAKE_DATE(year, month, day)     		(day | (month << 5) | ((year - 1980) << 9))
+#define FAT_MAKE_TIME(hour, minute, second) 		((second / 2) | (minute << 5) | (hour << 11))
+
 typedef enum {
 	FAT_FILESYSTEM_TYPE_INVALID,			// 0
 	FAT_FILESYSTEM_TYPE_FAT12,				// 1
@@ -112,8 +116,8 @@ typedef struct fatDirectoryEntry_t {
 }__attribute__((packed)) fatDirectoryEntry_t;	// total: 11 + 1 + 1 + 1 + 2 + 2 + 2 + 2 + 2 + 2 + 2 + 4 = 32
 
 bool fat_isDirectoryEntryTerminator(fatDirectoryEntry_t *entry);
-
 bool fat_isDirectoryEntryEmpty(fatDirectoryEntry_t *entry);
+bool fat_isFreeSpace(uint32_t clusterNumber);
 
 uint32_t fat32_decodeClusterNumber(uint32_t clusterNumber);
 bool fat16_isEndOfChainMarker(uint16_t clusterNumber);

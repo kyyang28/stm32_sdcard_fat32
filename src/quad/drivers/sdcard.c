@@ -879,7 +879,7 @@ bool sdcard_poll(void)
 			break;
 		
 		case SDCARD_STATE_NOT_PRESENT:
-			printf("SDCARD_STATE_NOT_PRESENT!!\r\n");
+//			printf("SDCARD_STATE_NOT_PRESENT!!\r\n");
 			break;
 
 		default:
