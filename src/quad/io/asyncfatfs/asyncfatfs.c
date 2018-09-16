@@ -232,7 +232,6 @@ typedef enum {
 
 typedef struct afatfsCreateFile_t {
 	afatfsFileCallback_t callback;
-
 	uint8_t phase;
 	uint8_t filename[FAT_FILENAME_LENGTH];
 }afatfsCreateFile_t;
@@ -811,13 +810,13 @@ static void afatfs_sdcardReadComplete(sdcardBlockOperation_e operation, uint32_t
 			if (buffer == NULL) {
 				/* Read failed, mark the sector as empty and whoever asked for it will ask for it again later to retry */
 				afatfs.cacheDescriptor[i].state = AFATFS_CACHE_STATE_EMPTY;
-				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			} else {
 //				printf("afatfs_cacheSectorGetMemory(i) == buffer: %d, %s, %s, %d\r\n", afatfs_cacheSectorGetMemory(i) == buffer, __FILE__, __FUNCTION__, __LINE__);
 //				printf("afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_READING: %d, %s, %s, %d\r\n", afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_READING, __FILE__, __FUNCTION__, __LINE__);
 				afatfs_assert(afatfs_cacheSectorGetMemory(i) == buffer && afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_READING);
 				afatfs.cacheDescriptor[i].state = AFATFS_CACHE_STATE_IN_SYNC;
-				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			}
 			
 			break;
@@ -1489,12 +1488,13 @@ afatfsOperationStatus_e afatfs_fseek(afatfsFilePtr_t file, int32_t offset, afatf
  */
 bool afatfs_chdir(afatfsFilePtr_t directory)
 {
-	printf();
+//	printf("operation: %u, %d\r\n", afatfs.currentDirectory.operation.operation, __LINE__);	// operation = AFATFS_FILE_OPERATION_NONE (0)
 	if (afatfs_fileIsBusy(&afatfs.currentDirectory)) {
 		return false;
 	}
 	
 	if (directory) {
+//		printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 		/* Directory is NOT NULL */
 		if (afatfs_fileIsBusy(directory)) {
 			return false;		// file operation is busy
@@ -1520,6 +1520,8 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 		afatfs.currentDirectory.mode = AFATFS_FILE_MODE_READ | AFATFS_FILE_MODE_WRITE;
 
 //		printf("afatfs.currentDirectory.mode: %u\r\n", afatfs.currentDirectory.mode); // mode = 3
+		
+//		printf("afatfs.filesystemType: %u\r\n", afatfs.filesystemType); // filesystemType = 3 (FAT_FILESYSTEM_TYPE_FAT32)
 		
 		/* Configure the current directory type */
 		if (afatfs.filesystemType == FAT_FILESYSTEM_TYPE_FAT16) {
@@ -2324,6 +2326,8 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
 	
 	doMore:
 	
+//	printf("opState->phase: %u, %d\r\n", opState->phase, __LINE__);
+	
 	switch (opState->phase) {
 		case AFATFS_CREATEFILE_PHASE_INITIAL:
 //			printf("afatfs.currentDirectory.type: %u\r\n", afatfs.currentDirectory.type);			// afatfs.currentDirectory.type = AFATFS_FILE_TYPE_DIRECTORY (3)
@@ -2371,7 +2375,6 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
 							} else {
 								/* File not found */
 								opState->phase = AFATFS_CREATEFILE_PHASE_FAILURE;
-								
 								goto doMore;
 							}
 						} else if (strncmp(entry->filename, (char *)opState->filename, FAT_FILENAME_LENGTH) == 0) {
@@ -2387,6 +2390,9 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
 						break;
 					
 					case AFATFS_OPERATION_FAILURE:
+						afatfs_findLast(&afatfs.currentDirectory);
+						opState->phase = AFATFS_CREATEFILE_PHASE_FAILURE;
+						goto doMore;
 						break;
 					
 					case AFATFS_OPERATION_IN_PROGRESS:
@@ -2571,7 +2577,7 @@ static afatfsFilePtr_t afatfs_createFile(afatfsFilePtr_t file, const char *name,
 		opState->phase = AFATFS_CREATEFILE_PHASE_SUCCESS;		// AFATFS_CREATEFILE_PHASE_SUCCESS = 3
 	} else {
 		opState->phase = AFATFS_CREATEFILE_PHASE_INITIAL;		// AFATFS_CREATEFILE_PHASE_INITIAL = 0
-//		printf("opState->phase: %u\r\n", opState->phase);
+//		printf("opState->phase: %u, %d\r\n", opState->phase, __LINE__);
 	}
 	
 	afatfs_createFileContinue(file);
