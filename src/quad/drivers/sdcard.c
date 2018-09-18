@@ -145,6 +145,7 @@ void sdcard_init(bool useDMA)
 #else
 	/* DMA is not available */
 	(void) useDMA;
+//	printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 #endif
 	
 #ifdef SDCARD_SPI_CS_PIN
@@ -848,7 +849,7 @@ bool sdcard_poll(void)
 				
 				case SDCARD_RECEIVE_BLOCK_IN_PROGRESS:
 					if (millis() <= sdcard.operationStartTime + SDCARD_TIMEOUT_READ_MSEC) {
-						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 						break;		// Timeout not reached yet, so keep waiting
 					}
 					
@@ -866,7 +867,7 @@ bool sdcard_poll(void)
 							NULL,
 							sdcard.pendingOperation.callbackData
 						);
-						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//						printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 					}
 					
 					goto doMore;
@@ -876,12 +877,24 @@ bool sdcard_poll(void)
 			break;
 		
 		case SDCARD_STATE_STOPPING_MULTIPLE_BLOCK_WRITE:
+			if (sdcard_waitForIdle(SDCARD_MAXIMUM_BYTE_DELAY_FOR_CMD_REPLY)) {
+				sdcard_deselect();
+				
+				sdcard.state = SDCARD_STATE_READY;
+				
+#ifdef SDCARD_PROFILING
+                if (sdcard.profiler) {
+                    sdcard.profiler(SDCARD_BLOCK_OPERATION_WRITE, sdcard.pendingOperation.blockIndex, micros() - sdcard.pendingOperation.profileStartTime);
+                }
+#endif
+			} else if (millis() > sdcard.operationStartTime + SDCARD_TIMEOUT_WRITE_MSEC) {
+				sdcard_reset();
+				goto doMore;
+			}
 			break;
 		
 		case SDCARD_STATE_NOT_PRESENT:
 //			printf("SDCARD_STATE_NOT_PRESENT!!\r\n");
-			break;
-
 		default:
 			;
 	}

@@ -340,7 +340,8 @@ void resetsdcardConfig(sdcardConfig_t *sdcardConfig)
 	sdcardConfig->useDma = true;
 #else
 	sdcardConfig->useDma = false;
-#endif	
+//	printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+#endif
 }
 #endif
 

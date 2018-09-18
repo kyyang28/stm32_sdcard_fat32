@@ -133,7 +133,7 @@
 #define SDCARD_SPI_CS_PIN		SPI2_NSS_PIN		// SPI2_NSS_PIN = PE5
 
 /* Table 42 from <RM0090-STM32F407-Reference_mannual.pdf> */
-#define SDCARD_DMA_CHANNEL_TX	DMA1_Stream5		// DMA1_Stream5 is for SPI3, shouldn't it be DMA1_Stream4 which is utilised for SPI2
+//#define SDCARD_DMA_CHANNEL_TX	DMA1_Stream5		// DMA1_Stream5 is for SPI3, shouldn't it be DMA1_Stream4 which is utilised for SPI2
 //#define SDCARD_DMA_CHANNEL_TX	DMA1_Stream4		// DMA1_Stream5 is for SPI3, shouldn't it be DMA1_Stream4 which is utilised for SPI2
 #define SDCARD_DMA_CHANNEL		0
 #define SDCARD_DMA_CHANNEL_TX_COMPLETE_FLAG		DMA_FLAG_TCIF5

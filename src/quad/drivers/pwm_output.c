@@ -197,7 +197,7 @@ void motorInit(const motorConfig_t *motorConfig, uint16_t idlePulse, uint8_t mot
 		/* Timer PWM generator configuration */
 		if (useUnsyncedPwm) {
 			/* motors pwm signals get updated individually, which are separated from PID looptime */
-			printf("unsynced, %s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("unsynced, %s, %d\r\n", __FUNCTION__, __LINE__);
 //			printf("timerHardware->tim: 0x%x, %s, %d\r\n", (uint32_t)timerHardware->tim, __FUNCTION__, __LINE__);
 //			printf("timerHardware->tag: 0x%x, %s, %d\r\n", timerHardware->tag, __FUNCTION__, __LINE__);
 //			printf("timerHardware->channel: %u, %s, %d\r\n", timerHardware->channel, __FUNCTION__, __LINE__);
@@ -210,7 +210,7 @@ void motorInit(const motorConfig_t *motorConfig, uint16_t idlePulse, uint8_t mot
 //			pwmOutConfigMhz(&motors[motorIndex], timerHardware, timerMhzCounter, periodHz / motorConfig->motorPwmRate, idlePulse);
 		}else {
 			/* motors pwm signals get updated and synced at the end of each PID looptime */
-			printf("synced, %s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("synced, %s, %d\r\n", __FUNCTION__, __LINE__);
 			pwmOutConfigMhz(&motors[motorIndex], timerHardware, timerMhzCounter, 0xFFFF, 0);		// period = 0xFFFF (65535), idlePulse = 0
 //			pwmOutConfigMhz(&timerLeds[motorIndex], timerHardware, timerMhzCounter, 0xFFFF, 0);		// period = 0xFFFF, idlePulse = 0
 		}
