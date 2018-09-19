@@ -3433,8 +3433,12 @@ static void afatfs_fileOperationsPoll(void)
 #ifdef AFATFS_USE_INTROSPECTIVE_LOGGING
     afatfs_fileOperationContinue(&afatfs.introSpecLog);
 #endif
-	
+		
 	for (int i = 0; i < AFATFS_MAX_OPEN_FILES; i++) {
+//		printf("afatfs.openFiles[%d].operation: %u\r\n", i, afatfs.openFiles[i].operation.operation);
+//		printf("afatfs.openFiles[%d].attrib: %u\r\n", i, afatfs.openFiles[i].attrib);
+//		printf("afatfs.openFiles[%d].firstCluster: %u\r\n", i, afatfs.openFiles[i].firstCluster);
+//		printf("afatfs.openFiles[%d].mode: %u\r\n", i, afatfs.openFiles[i].mode);
 		afatfs_fileOperationContinue(&afatfs.openFiles[i]);
 	}
 }

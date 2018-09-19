@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\10-SDCARD.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\10-SDCARD.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Wed Sep 19 09:22:59 2018
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Wed Sep 19 10:11:40 2018
 <BR><P>
 <H3>Maximum Stack Usage =        536 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -570,8 +570,6 @@ Global Symbols
 <LI><a href="#[174]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spiInitDevice
 <LI><a href="#[ef]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_fseek
 <LI><a href="#[e1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_findNext
-<LI><a href="#[10a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_parseVolumeID
-<LI><a href="#[109]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_initContinue
 <LI><a href="#[100]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_fileOperationContinue
 <LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_extendSubdirectoryContinue
 <LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_createFileContinue
@@ -3073,7 +3071,7 @@ Local Symbols
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_FATFillWithPattern
 </UL>
 
-<P><STRONG><a name="[109]"></a>afatfs_initContinue</STRONG> (Thumb, 476 bytes, Stack size 48 bytes, asyncfatfs.o(i.afatfs_initContinue))
+<P><STRONG><a name="[109]"></a>afatfs_initContinue</STRONG> (Thumb, 374 bytes, Stack size 48 bytes, asyncfatfs.o(i.afatfs_initContinue))
 <BR><BR>[Stack]<UL><LI>Max Depth = 512 + Unknown Stack Size
 <LI>Call Chain = afatfs_initContinue &rArr; afatfs_createFile &rArr; afatfs_createFileContinue &rArr; afatfs_allocateDirectoryEntry &rArr; afatfs_extendSubdirectoryContinue &rArr; afatfs_appendRegularFreeClusterContinue &rArr; afatfs_findClusterWithCondition &rArr; afatfs_cacheSector &rArr; sdcard_readBlock &rArr; sdcard_sendCommand &rArr; spiTransfer &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
 </UL>
@@ -3088,7 +3086,6 @@ Local Symbols
 <LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_cacheSector
 <LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_assert
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_FATFillWithPattern
-<LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[10b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_poll
 </UL>
@@ -3113,11 +3110,8 @@ Local Symbols
 <LI><a href="#[103]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_fileRetainCursorSectorForRead
 </UL>
 
-<P><STRONG><a name="[10a]"></a>afatfs_parseVolumeID</STRONG> (Thumb, 242 bytes, Stack size 24 bytes, asyncfatfs.o(i.afatfs_parseVolumeID))
-<BR><BR>[Stack]<UL><LI>Max Depth = 152 + Unknown Stack Size
-<LI>Call Chain = afatfs_parseVolumeID &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
-</UL>
-<BR>[Calls]<UL><LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
+<P><STRONG><a name="[10a]"></a>afatfs_parseVolumeID</STRONG> (Thumb, 224 bytes, Stack size 20 bytes, asyncfatfs.o(i.afatfs_parseVolumeID))
+<BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = afatfs_parseVolumeID
 </UL>
 <BR>[Called By]<UL><LI><a href="#[109]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_initContinue
 </UL>
