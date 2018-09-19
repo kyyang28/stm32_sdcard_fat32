@@ -1,0 +1,53 @@
+
+afatfs.fatStartSector: 8790, afatfs_parseVolumeID, 1019
+finder->entryIndex: -1
+sector: 0x0
+afatfs_findNext, 1703
+finder->entryIndex: -1
+sector: 0x2000258c
+finder->entryIndex: 0
+sector: 0x2000258c
+finder->entryIndex: 1
+sector: 0x2000258c
+finder->entryIndex: 2
+sector: 0x2000258c
+finder->entryIndex: 3
+sector: 0x2000258c
+src\quad\io\asyncfatfs\asyncfatfs.c, afatfs_createFileContinue, 2376
+finder->entryIndex: -1
+sector: 0x2000258c
+finder->entryIndex: 0
+sector: 0x2000258c
+finder->entryIndex: 1
+sector: 0x2000258c
+finder->entryIndex: 2
+sector: 0x2000258c
+afatfs_createFileContinue, 2498
+bestGapLength: 130945, afatfs_initContinue, 3320
+afatfs_fatEntriesPerSector(): 128, afatfs_initContinue, 3321
+afatfs.initPhase, 5 (AFATFS_INITIALISATION_FREEFILE_UPDATE_FAT), afatfs_initContinue, 3344
+
+
+
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 0, afatfs_initContinue, 3383
+status: 1, afatfs_initContinue, 3383
+status: 1, src\quad\io\asyncfatfs\asyncfatfs.c, afatfs_initContinue, 3399
+src\quad\io\asyncfatfs\asyncfatfs.c, afatfs_initContinue, 3422
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
+afatfs_fileOperationContinue, 3151
