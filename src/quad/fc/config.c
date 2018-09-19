@@ -22,6 +22,7 @@
 #include "mixer.h"
 #include "fc_rc.h"
 #include "sdcard.h"
+#include "blackbox_io.h"
 
 #define BRUSHED_MOTORS_PWM_RATE 			16000
 #define BRUSHLESS_MOTORS_PWM_RATE 			480
@@ -456,6 +457,16 @@ void createDefaultConfig(master_t *config)
 #ifdef USE_SDCARD
 	intFeatureSet(FEATURE_SDCARD, featuresPtr);
 	resetsdcardConfig(&config->sdcardConfig);
+#endif
+
+#ifdef BLACKBOX
+#if defined(ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT)
+	intFeatureSet(FEATURE_BLACKBOX, featuresPtr);
+	config->blackboxConfig.device = BLACKBOX_DEVICE_SDCARD;		// BLACKBOX using SDCARD media
+#endif
+	config->blackboxConfig.rate_num = 1;
+	config->blackboxConfig.rate_denom = 1;
+	config->blackboxConfig.on_motor_test = 0;	// default off
 #endif
 
 #ifdef BEEPER

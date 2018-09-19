@@ -51,6 +51,9 @@
 #include "sdcard.h"
 #include "asyncfatfs.h"
 
+#include "blackbox.h"
+#include "blackbox_io.h"
+
 //#define GPIO_PA1_PIN				PA1
 //#define GPIO_PB8_PIN				PB8
 
@@ -458,10 +461,10 @@ int main(void)
 	rxInit(RxConfig(), ModeActivationProfile()->modeActivationConditions);
 	
 #ifdef USE_SDCARD
-	if (feature(FEATURE_SDCARD) /* && blackboxConfig()->device == BLACKBOX_SDCARD */) {
+	if (feature(FEATURE_SDCARD) && BlackboxConfig()->device == BLACKBOX_SDCARD) {
 //		printf("USE_SDCARD, %s, %d\r\n", __FUNCTION__, __LINE__);
 		sdcardInsertionDetectInit();
-		sdcard_init(SdcardConfig()->useDma);
+		sdcard_init(SdcardConfig()->useDma);		// SdcardConfig()->useDma = false for now, use DMA later
 		afatfs_init();
 //		if (!sdcard_isInserted()) {
 //			printf("SDCARD is not present!\r\n");
@@ -471,6 +474,10 @@ int main(void)
 	}
 #endif
 	
+#ifdef BLACKBOX
+	initBlackbox();
+#endif	
+
 #if defined(USE_IMU)
 	/* set gyro calibration cycles */
 	gyroSetCalibrationCycles();

@@ -1,5 +1,6 @@
 
 #include "rc_controls.h"
+#include "fc_core.h"
 
 static motorConfig_t *motorConfig;
 static pidProfile_t *pidProfile;
@@ -30,4 +31,9 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, mo
 	pidProfile = pidProfileToUse;
 	
 	isUsingSticksToArm = !isModeActivationConditionPresent(modeActivationConditions, BOXARM);
+}
+
+void processRcStickPositions(void)
+{
+	mwArm();
 }

@@ -61,3 +61,4 @@
 .\objects\feature.o: src\quad\config\config_profile.h
 .\objects\feature.o: .\src\quad\fc\config.h
 .\objects\feature.o: .\src\quad\drivers\sdcard.h
+.\objects\feature.o: .\src\quad\blackbox\blackbox.h

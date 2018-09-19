@@ -1665,14 +1665,14 @@ afatfsOperationStatus_e afatfs_findNext(afatfsFilePtr_t directory, afatfsFinder_
 	uint8_t *sector;
 	
 //	printf("AFATFS_FILES_PER_DIRECTORY_SECTOR: %u\r\n", AFATFS_FILES_PER_DIRECTORY_SECTOR);	// AFATFS_FILES_PER_DIRECTORY_SECTOR = 16
-	printf("finder->entryIndex: %d\r\n", finder->entryIndex);
+//	printf("finder->entryIndex: %d\r\n", finder->entryIndex);
 	
 	if (finder->entryIndex == AFATFS_FILES_PER_DIRECTORY_SECTOR - 1) {
 		if (afatfs_fseekAtomic(directory, AFATFS_SECTOR_SIZE)) {
 			finder->entryIndex = -1;
 			/* Fall through to read the first entry of that new sector */
 		} else {
-			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 			return AFATFS_OPERATION_IN_PROGRESS;
 		}
 	}
@@ -1680,7 +1680,7 @@ afatfsOperationStatus_e afatfs_findNext(afatfsFilePtr_t directory, afatfsFinder_
 	sector = afatfs_fileRetainCursorSectorForRead(directory);
 //	printf("sector: 0x%x, %s, %s, %d\r\n", (uint32_t)sector, __FILE__, __FUNCTION__, __LINE__);
 	
-	printf("sector: 0x%x\r\n", (uint32_t)sector);
+//	printf("sector: 0x%x\r\n", (uint32_t)sector);
 	
 	if (sector) {
 		finder->entryIndex++;
@@ -1696,11 +1696,11 @@ afatfsOperationStatus_e afatfs_findNext(afatfsFilePtr_t directory, afatfsFinder_
 	} else {
 		if (afatfs_isEndOfAllocatedFile(directory)) {
 			*dirEntry = NULL;
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			return AFATFS_OPERATION_SUCCESS;
 		}
 		
-		printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//		printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 		return AFATFS_OPERATION_IN_PROGRESS;
 	}
 }
@@ -2373,7 +2373,7 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
 								afatfs_findFirst(&afatfs.currentDirectory, &file->directoryEntryPos);
 								
 								opState->phase = AFATFS_CREATEFILE_PHASE_CREATE_NEW_FILE;
-								printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//								printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 								goto doMore;
 							} else {
 								/* File not found */
@@ -2381,7 +2381,7 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
 								goto doMore;
 							}
 						} else if (strncmp(entry->filename, (char *)opState->filename, FAT_FILENAME_LENGTH) == 0) {
-							printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//							printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 							
 							/* We found a file with this name! */
 							afatfs_fileLoadDirectoryEntry(file, entry);
@@ -2495,7 +2495,7 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
             }
 
             file->operation.operation = AFATFS_FILE_OPERATION_NONE;
-			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 			
 			/* afatfsCreateFile_t *opState = &file->operation.state.createFile */
             opState->callback(file);										// calling afatfs_freeFileCreated() callback function
@@ -3148,7 +3148,7 @@ static void afatfs_fileOperationContinue(afatfsFile_t *file)
             afatfs_extendSubdirectoryContinue(file);
         break;
         case AFATFS_FILE_OPERATION_NONE:
-			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
             ;
         break;
     }
@@ -3475,7 +3475,7 @@ void afatfs_init(void)
 {
 	afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_INITIALISATION;
 	afatfs.initPhase = AFATFS_INITIALISATION_READ_MBR;
-	afatfs.lastClusterAllocated = FAT_SMALLEST_LEGAL_CLUSTER_NUMBER;
+	afatfs.lastClusterAllocated = FAT_SMALLEST_LEGAL_CLUSTER_NUMBER;		// FAT_SMALLEST_LEGAL_CLUSTER_NUMBER = 2
 	
 #ifdef AFATFS_USE_INTROSPECTIVE_LOGGING
 	sdcard_setProfilerCallback(afatfs_sdcardProfilerCallback);

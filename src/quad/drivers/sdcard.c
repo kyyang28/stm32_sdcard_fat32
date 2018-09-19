@@ -737,8 +737,16 @@ bool sdcard_poll(void)
 			}
 #endif		
 #endif
+			/** 
+			 * Transmitting without using DMA
+			 */
 			if (!useDMAForTx) {
-				/* Send another chunk */
+				/* Send another chunk 
+				 *
+				 * SDCARD_NON_DMA_CHUNK_SIZE = 256
+				 * SDCARD_BLOCK_SIZE = 512
+				 * chunkIndex = SDCARD_BLOCK_SIZE / SDCARD_NON_DMA_CHUNK_SIZE = 512 / 256 = 2
+				 */
 				spiTransfer(SDCARD_SPI_INSTANCE, NULL, sdcard.pendingOperation.buffer + SDCARD_NON_DMA_CHUNK_SIZE * sdcard.pendingOperation.chunkIndex, SDCARD_NON_DMA_CHUNK_SIZE);
 				
 				sdcard.pendingOperation.chunkIndex++;

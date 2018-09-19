@@ -14,6 +14,7 @@
 #include "motors.h"				// including mixer.h
 #include "config_profile.h"
 #include "sdcard.h"
+#include "blackbox.h"
 
 typedef struct master_s {
 	uint8_t version;
@@ -68,6 +69,10 @@ typedef struct master_s {
 #ifdef USE_SDCARD
 	sdcardConfig_t sdcardConfig;
 #endif
+
+#ifdef BLACKBOX
+	blackboxConfig_t blackboxConfig;
+#endif
 	
 	profile_t profile[MAX_PROFILE_COUNT];
 	uint8_t current_profile_index;
@@ -102,5 +107,6 @@ extern controlRateConfig_t *currentControlRateProfile;
 #define ArmingConfig(x)						(&masterConfig.armingConfig)
 #define ModeActivationProfile(x)			(&masterConfig.modeActivationProfile)
 #define SdcardConfig(x)						(&masterConfig.sdcardConfig)
+#define BlackboxConfig(x)					(&masterConfig.blackboxConfig)
 
 #endif	// __CONFIGMASTER_H

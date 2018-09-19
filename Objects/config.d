@@ -63,6 +63,7 @@
 .\objects\config.o: .\src\quad\config\config_profile.h
 .\objects\config.o: .\src\quad\fc\config.h
 .\objects\config.o: .\src\quad\drivers\sdcard.h
+.\objects\config.o: .\src\quad\blackbox\blackbox.h
 .\objects\config.o: .\src\quad\config\config_eeprom.h
 .\objects\config.o: .\src\quad\drivers\pwm_output.h
 .\objects\config.o: .\src\quad\drivers\timer.h
@@ -74,3 +75,4 @@
 .\objects\config.o: .\src\quad\common\maths.h
 .\objects\config.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
 .\objects\config.o: src\quad\fc\fc_rc.h
+.\objects\config.o: .\src\quad\blackbox\blackbox_io.h

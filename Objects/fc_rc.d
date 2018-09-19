@@ -62,5 +62,6 @@
 .\objects\fc_rc.o: .\src\quad\config\config_profile.h
 .\objects\fc_rc.o: .\src\quad\fc\config.h
 .\objects\fc_rc.o: .\src\quad\drivers\sdcard.h
+.\objects\fc_rc.o: .\src\quad\blackbox\blackbox.h
 .\objects\fc_rc.o: .\src\quad\common\maths.h
 .\objects\fc_rc.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h

@@ -40,3 +40,5 @@
 .\objects\rc_controls.o: .\src\quad\drivers\resource.h
 .\objects\rc_controls.o: .\src\quad\flight\mixer.h
 .\objects\rc_controls.o: .\src\quad\flight\pid.h
+.\objects\rc_controls.o: src\quad\fc\fc_core.h
+.\objects\rc_controls.o: .\src\quad\common\time.h

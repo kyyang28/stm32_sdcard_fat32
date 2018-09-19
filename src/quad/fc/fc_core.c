@@ -7,14 +7,35 @@
 #include "pwm_output.h"
 #include "mixer.h"
 #include "asyncfatfs.h"
+#include "blackbox.h"
 
 uint8_t motorControlEnable = false;
 
 bool isRXDataNew;
 
+void mwArm(void)
+{
+	startBlackbox();
+}
+
 void processRx(timeUs_t currentTimeUs)
 {
 	calculateRxChannelsAndUpdateFailsafe(currentTimeUs);
+	
+	/* update RSSI */
+	
+	
+	/* handle failsafe if necessary */
+	
+	
+	/* calculate throttle status */
+	
+	
+	/* handle AirMode at LOW throttle */
+	
+	
+	/* handle rc stick positions */
+	processRcStickPositions();
 }
 
 static void subTaskMotorUpdate(void)

@@ -122,5 +122,6 @@ typedef struct armingConfig_s {
 }armingConfig_t;
 
 void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, motorConfig_t *motorConfigToUse, pidProfile_t *pidProfileToUse);
+void processRcStickPositions(void);
 
 #endif	// __RC_CONTROLS_H

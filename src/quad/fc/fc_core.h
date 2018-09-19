@@ -6,6 +6,8 @@
 
 extern bool isRXDataNew;
 
+void mwArm(void);
+
 void processRx(timeUs_t currentTimeUs);
 void taskMainPidLoop(timeUs_t currentTimeUs);
 
