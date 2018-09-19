@@ -64,3 +64,4 @@
 .\objects\blackbox.o: .\src\quad\drivers\sdcard.h
 .\objects\blackbox.o: .\src\quad\blackbox\blackbox.h
 .\objects\blackbox.o: .\src\quad\drivers\system.h
+.\objects\blackbox.o: src\quad\blackbox\blackbox_io.h

@@ -1,6 +1,8 @@
 
 #include "runtime_config.h"
 
+uint8_t armingFlags = 0;
+
 static uint32_t enabledSensors = 0;
 
 bool sensors(uint32_t mask)

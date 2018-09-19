@@ -3470,6 +3470,19 @@ void afatfs_poll(void)
 	}
 }
 
+/**
+ * Returns true if either the freefile or the regular cluster pool has been exhausted during a previous write operation.
+ */
+bool afatfs_isFull(void)
+{
+	return afatfs.filesystemFull;
+}
+
+afatfsFilesystemState_e afatfs_getFilesystemState(void)
+{
+	return afatfs.filesystemState;
+}
+
 /* Initialisation of AFATFS */
 void afatfs_init(void)
 {

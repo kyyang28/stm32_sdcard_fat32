@@ -1,4 +1,5 @@
 .\objects\rc_controls.o: src\quad\fc\rc_controls.c
+.\objects\rc_controls.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\rc_controls.o: src\quad\fc\rc_controls.h
 .\objects\rc_controls.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 .\objects\rc_controls.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
@@ -42,3 +43,4 @@
 .\objects\rc_controls.o: .\src\quad\flight\pid.h
 .\objects\rc_controls.o: src\quad\fc\fc_core.h
 .\objects\rc_controls.o: .\src\quad\common\time.h
+.\objects\rc_controls.o: src\quad\fc\runtime_config.h

@@ -6,6 +6,7 @@
 
 extern bool isRXDataNew;
 
+void updateLEDs(void);
 void mwArm(void);
 
 void processRx(timeUs_t currentTimeUs);

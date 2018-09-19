@@ -16,5 +16,5 @@ void taskUpdateRxMain(timeUs_t currentTimeUs)			// TODO: make this function stat
 	updateRcCommands();
 	
 	/* update LEDs */
-//	updateLEDs();
+	updateLEDs();
 }

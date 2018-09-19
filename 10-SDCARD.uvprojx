@@ -805,6 +805,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\quad\blackbox\blackbox.c</FilePath>
             </File>
+            <File>
+              <FileName>blackbox_io.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\quad\blackbox\blackbox_io.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

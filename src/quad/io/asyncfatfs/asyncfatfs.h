@@ -50,6 +50,9 @@ void afatfs_findFirst(afatfsFilePtr_t directory, afatfsFinder_t *finder);
 afatfsOperationStatus_e afatfs_findNext(afatfsFilePtr_t directory, afatfsFinder_t *finder, fatDirectoryEntry_t **dirEntry);
 void afatfs_findLast(afatfsFilePtr_t directory);
 
+afatfsFilesystemState_e afatfs_getFilesystemState(void);
+bool afatfs_isFull(void);
+
 void afatfs_init(void);
 bool afatfs_flush(void);
 void afatfs_poll(void);

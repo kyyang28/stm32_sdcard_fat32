@@ -52,3 +52,6 @@
 .\objects\fc_core.o: .\src\quad\drivers\ledTimer.h
 .\objects\fc_core.o: .\src\quad\io\asyncfatfs\asyncfatfs.h
 .\objects\fc_core.o: .\src\quad\io\asyncfatfs\fat_standard.h
+.\objects\fc_core.o: .\src\quad\blackbox\blackbox.h
+.\objects\fc_core.o: src\quad\fc\runtime_config.h
+.\objects\fc_core.o: .\src\quad\drivers\led.h

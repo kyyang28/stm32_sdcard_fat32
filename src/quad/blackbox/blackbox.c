@@ -46,9 +46,6 @@ static bool blackboxLoggedAnyFrames;
 
 static uint16_t blackboxSlowFrameIterationTimer;
 
-/* How many bytes can we write *this* iteration without overflowing transmit buffers or overstressing the OpenLog? */
-int32_t blackboxHeaderBudget;
-
 static int gcd(int num, int denom)
 {
 	if (denom == 0) {
@@ -56,67 +53,6 @@ static int gcd(int num, int denom)
 	}
 	
 	return gcd(denom, num % denom);
-}
-
-void validateBlackboxConfig(void)
-{
-	int div;
-	
-	if (BlackboxConfig()->rate_num == 0 || BlackboxConfig()->rate_denom == 0
-			|| BlackboxConfig()->rate_num >= BlackboxConfig()->rate_denom) {
-		BlackboxConfig()->rate_num = 1;
-		BlackboxConfig()->rate_denom = 1;
-	} else {
-		/**
-		 * Reduce the fraction the user entered as much as possible (makes the recorded/skipped frame pattern repeat
-		 * itself more frequently)
-		 */
-		div = gcd(BlackboxConfig()->rate_num, BlackboxConfig()->rate_denom);
-		
-		BlackboxConfig()->rate_num /= div;
-		BlackboxConfig()->rate_denom /= div;
-	}
-	
-	/* If we have chosen an unsupported device, change the device to serial */
-	switch (BlackboxConfig()->device) {
-#ifdef USE_FLASHFS
-		case BLACKBOX_DEVICE_FLASH:
-#endif
-
-#ifdef USE_SDCARD
-		case BLACKBOX_DEVICE_SDCARD:
-#endif
-		case BLACKBOX_DEVICE_SERIAL:
-			/* Device supported, leave the setting alone */
-			break;
-		
-		default:
-			BlackboxConfig()->device = BLACKBOX_DEVICE_SERIAL;
-	}
-}
-
-/**
- * Start Blackbox logging if it is not already running.
- * Intended to be called upon arming.
- */
-void startBlackbox(void)
-{
-	if (blackboxState == BLACKBOX_STATE_STOPPED) {
-		/* Validate blackbox configuration */
-		validateBlackboxConfig();
-		
-		/* Check if blackbox device is open or not */
-		
-		
-		/* Initialise history */
-		
-		
-		/* Build blackbox condition cache */
-		
-		
-		/* Set blackboxState to BLACKBOX_STATE_PREPARE_LOG_FILE (2) */
-		
-	}
 }
 
 static void blackboxSetState(BlackboxState newState)
@@ -159,6 +95,73 @@ static void blackboxSetState(BlackboxState newState)
 	}
 	
 	blackboxState = newState;
+}
+
+void validateBlackboxConfig(void)
+{
+	int div;
+	
+	if (BlackboxConfig()->rate_num == 0 || BlackboxConfig()->rate_denom == 0
+			|| BlackboxConfig()->rate_num >= BlackboxConfig()->rate_denom) {
+		BlackboxConfig()->rate_num = 1;
+		BlackboxConfig()->rate_denom = 1;
+	} else {
+		/**
+		 * Reduce the fraction the user entered as much as possible (makes the recorded/skipped frame pattern repeat
+		 * itself more frequently)
+		 */
+		div = gcd(BlackboxConfig()->rate_num, BlackboxConfig()->rate_denom);
+		
+		BlackboxConfig()->rate_num /= div;
+		BlackboxConfig()->rate_denom /= div;
+	}
+	
+	/* If we have chosen an unsupported device, change the device to serial */
+	switch (BlackboxConfig()->device) {
+#ifdef USE_FLASHFS
+		case BLACKBOX_DEVICE_FLASH:
+#endif
+
+#ifdef USE_SDCARD
+		case BLACKBOX_DEVICE_SDCARD:
+#endif
+		case BLACKBOX_DEVICE_SERIAL:
+			/* Device supported, leave the setting alone */
+			break;
+		
+		default:
+			BlackboxConfig()->device = BLACKBOX_DEVICE_SERIAL;
+	}
+}
+
+/**
+ * Start Blackbox logging if it is not already running.
+ * Intended to be called upon arming.
+ *
+ * This function only executes once after the quad is ARMed.
+ */
+void startBlackbox(void)
+{
+//	printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+	
+	if (blackboxState == BLACKBOX_STATE_STOPPED) {
+		/* Validate blackbox configuration */
+		validateBlackboxConfig();
+		
+		/* Check if blackbox device is open or not */
+		if (!blackboxDeviceOpen()) {
+			blackboxSetState(BLACKBOX_STATE_DISABLED);
+		}
+		
+		/* Initialise history */
+		
+		
+		/* Build blackbox condition cache */
+		
+		
+		/* Set blackboxState to BLACKBOX_STATE_PREPARE_LOG_FILE (2) */
+		
+	}
 }
 
 static bool canUseBlackboxWithCurrentConfiguration(void)

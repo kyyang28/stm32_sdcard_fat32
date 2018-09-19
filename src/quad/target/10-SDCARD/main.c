@@ -275,9 +275,9 @@ int main(void)
 		pwmWriteLed(i, ledDutyCycle[i]);
 	}
 #else
-	ledTimerMhzInit(LedTimerConfig(), idlePulse, LED_NUMBER);
+//	ledTimerMhzInit(LedTimerConfig(), idlePulse, LED_NUMBER);
 #endif
-#endif	
+#endif
 	
 	/* Initialise the ESC endpoints */
 	mixerInit(MixerConfig()->mixerMode, masterConfig.customMotorMixer);
@@ -520,7 +520,7 @@ int main(void)
 ////		for (int i = 0; i < LED_NUMBER; i++) {
 ////			pwmWriteLed(i, ledpwmval);
 ////		}
-		
+				
 #if 1
 		const timeUs_t currentTimeUs = micros();
 //		printf("currentTimeUs before processRx: %u, %s, %d\r\n", currentTimeUs, __FUNCTION__, __LINE__);

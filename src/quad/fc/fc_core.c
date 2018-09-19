@@ -8,14 +8,51 @@
 #include "mixer.h"
 #include "asyncfatfs.h"
 #include "blackbox.h"
+#include "runtime_config.h"
+#include "led.h"
 
 uint8_t motorControlEnable = false;
 
 bool isRXDataNew;
 
+void updateLEDs(void)
+{
+//	printf("armingFlags: %u, %s, %s, %d\r\n", armingFlags, __FILE__, __FUNCTION__, __LINE__);
+	
+	if (CHECK_ARMING_FLAG(ARMED)) {
+//		printf("ARMED, %s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+		LED3_ON;
+		LED4_ON;
+		LED5_ON;
+		LED6_ON;
+	} else {
+//		printf("Not ARMED: %s, %d\r\n", __FUNCTION__, __LINE__);
+		ENABLE_ARMING_FLAG(OK_TO_ARM);
+	}
+}
+
 void mwArm(void)
 {
-	startBlackbox();
+	if (CHECK_ARMING_FLAG(OK_TO_ARM)) {
+		if (CHECK_ARMING_FLAG(ARMED)) {
+			return;
+		}
+		
+//        if (IS_RC_MODE_ACTIVE(BOXFAILSAFE)) {
+//            return;
+//        }
+		
+		if (!CHECK_ARMING_FLAG(PREVENT_ARMING)) {
+			ENABLE_ARMING_FLAG(ARMED);
+			ENABLE_ARMING_FLAG(WAS_EVER_ARMED);
+			
+#ifdef BLACKBOX
+			if (feature(FEATURE_BLACKBOX)) {
+				startBlackbox();
+			}
+#endif
+		}
+	}
 }
 
 void processRx(timeUs_t currentTimeUs)

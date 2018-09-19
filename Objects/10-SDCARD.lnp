@@ -72,6 +72,7 @@
 ".\objects\sbus.o"
 ".\objects\debug.o"
 ".\objects\blackbox.o"
+".\objects\blackbox_io.o"
 --strict --scatter ".\Objects\10-SDCARD.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

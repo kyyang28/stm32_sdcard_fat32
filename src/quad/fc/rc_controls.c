@@ -1,6 +1,9 @@
 
+#include <stdio.h>
+
 #include "rc_controls.h"
 #include "fc_core.h"
+#include "runtime_config.h"
 
 static motorConfig_t *motorConfig;
 static pidProfile_t *pidProfile;
@@ -35,5 +38,10 @@ void useRcControlsConfig(modeActivationCondition_t *modeActivationConditions, mo
 
 void processRcStickPositions(void)
 {
-	mwArm();
+//	printf("armingFlags: %u, %s, %d\r\n", armingFlags, __FUNCTION__, __LINE__);
+	
+	if (CHECK_ARMING_FLAG(OK_TO_ARM)) {
+//		printf("OK_TO_ARM: %s, %d\r\n", __FUNCTION__, __LINE__);
+		mwArm();
+	}
 }

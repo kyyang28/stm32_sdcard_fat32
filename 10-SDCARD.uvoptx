@@ -420,7 +420,7 @@
 
   <Group>
     <GroupName>DRIVERS</GroupName>
-    <tvExp>0</tvExp>
+    <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
     <RteFlg>0</RteFlg>
@@ -572,7 +572,7 @@
       <GroupNumber>4</GroupNumber>
       <FileNumber>31</FileNumber>
       <FileType>1</FileType>
-      <tvExp>0</tvExp>
+      <tvExp>1</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\src\quad\drivers\led.c</PathWithFileName>
@@ -868,7 +868,7 @@
       <GroupNumber>5</GroupNumber>
       <FileNumber>55</FileNumber>
       <FileType>1</FileType>
-      <tvExp>1</tvExp>
+      <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\src\quad\fc\fc_tasks.c</PathWithFileName>
@@ -892,7 +892,7 @@
       <GroupNumber>5</GroupNumber>
       <FileNumber>57</FileNumber>
       <FileType>1</FileType>
-      <tvExp>0</tvExp>
+      <tvExp>1</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
       <PathWithFileName>.\src\quad\fc\runtime_config.c</PathWithFileName>
@@ -1153,6 +1153,18 @@
       <bDave2>0</bDave2>
       <PathWithFileName>.\src\quad\blackbox\blackbox.c</PathWithFileName>
       <FilenameWithoutPath>blackbox.c</FilenameWithoutPath>
+      <RteFlg>0</RteFlg>
+      <bShared>0</bShared>
+    </File>
+    <File>
+      <GroupNumber>13</GroupNumber>
+      <FileNumber>74</FileNumber>
+      <FileType>1</FileType>
+      <tvExp>0</tvExp>
+      <tvExpOptDlg>0</tvExpOptDlg>
+      <bDave2>0</bDave2>
+      <PathWithFileName>.\src\quad\blackbox\blackbox_io.c</PathWithFileName>
+      <FilenameWithoutPath>blackbox_io.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
