@@ -61,5 +61,7 @@ uint32_t afatfs_getFreeBufferSpace(void);
 
 /* API functions */
 bool afatfs_mkdir(const char *filename, afatfsFileCallback_t callback);
+bool afatfs_fclose(afatfsFilePtr_t file, afatfsCallback_t callback);
+bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t complete);
 
 #endif	// __ASYNCFATFS_H

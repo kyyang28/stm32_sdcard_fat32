@@ -3144,7 +3144,7 @@ static void afatfs_fileOperationContinue(afatfsFile_t *file)
             afatfs_appendRegularFreeClusterContinue(file);
         break;
         case AFATFS_FILE_OPERATION_EXTEND_SUBDIRECTORY:
-			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
             afatfs_extendSubdirectoryContinue(file);
         break;
         case AFATFS_FILE_OPERATION_NONE:
@@ -3543,6 +3543,79 @@ bool afatfs_mkdir(const char *filename, afatfsFileCallback_t callback)
 		afatfs_createFile(file, filename, FAT_FILE_ATTRIBUTE_DIRECTORY, AFATFS_FILE_MODE_CREATE | AFATFS_FILE_MODE_READ | AFATFS_FILE_MODE_WRITE, callback);
 	} else if (callback) {
 		callback(NULL);
+	}
+	
+	return file != NULL;
+}
+
+/**
+ * Begin the process of opening a file with the given name in the current working directory (paths in the filename are 
+ * not supported) using the given mode.
+ *
+ * To open the current working directory, pass "." for filename.
+ *
+ * The complete() callback is called when finished with either a file handle (file was opened) or NULL upon failure.
+ *
+ * Supported file mode strings:
+ *
+ * r - Read from an existing file
+ * w - Create a file for write access, if the file already exists then truncate it
+ * a - Create a file for write access to the end of the file only, if the file already exists then append to it
+ *
+ * r+ - Read and write from an existing file
+ * w+ - Read and write from an existing file, if the file doesn't already exist it is created
+ * a+ - Read from or append to an existing file, if the file doesn't already exist it is created (TODO)
+ *
+ * as - Create a new file which is stored contiguously on disk (high performance mode/freefile) for append or write
+ * ws	If the file is already non-empty or freefile support is not compiled in then it will fall back to non-contiguous 
+ *		operation.
+ *
+ * All other mode strings are illegal. In particular, don't add "b" to the end of the mode string.
+ *
+ * Returns false if the open failed really early (out of file handles).
+ */
+bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t complete)
+{
+	uint8_t fileMode = 0;
+	afatfsFilePtr_t file;
+	
+	switch (mode[0]) {
+		case 'r':
+			fileMode = AFATFS_FILE_MODE_READ;
+			break;
+		
+		case 'w':
+			fileMode = AFATFS_FILE_MODE_WRITE | AFATFS_FILE_MODE_CREATE;
+			break;
+		
+		case 'a':
+			fileMode = AFATFS_FILE_MODE_APPEND | AFATFS_FILE_MODE_CREATE;
+			break;
+	}
+	
+	switch (mode[1]) {
+		case '+':
+			fileMode |= AFATFS_FILE_MODE_READ;
+		
+			if (fileMode == AFATFS_FILE_MODE_READ) {
+				fileMode |= AFATFS_FILE_MODE_WRITE;
+			}
+			break;
+		
+		case 's':
+#ifdef AFATFS_USE_FREEFILE
+			fileMode |= AFATFS_FILE_MODE_CONTIGUOUS | AFATFS_FILE_MODE_RETAIN_DIRECTORY;
+#endif
+			break;
+	}
+	
+	file = afatfs_allocateFileHandle();
+	
+	if (file) {
+		printf("fileMode: 0x%x, %s, %s, %d\r\n", fileMode, __FILE__, __FUNCTION__, __LINE__);
+		afatfs_createFile(file, filename, FAT_FILE_ATTRIBUTE_ARCHIVE, fileMode, complete);
+	} else if (complete) {
+		complete(NULL);
 	}
 	
 	return file != NULL;
