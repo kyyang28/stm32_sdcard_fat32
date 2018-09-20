@@ -1500,6 +1500,7 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 		
 		/* file operation is NOT busy */
 		memcpy(&afatfs.currentDirectory, directory, sizeof(*directory));
+//		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 		return true;
 	} else {
 		/* Directory is NULL */
