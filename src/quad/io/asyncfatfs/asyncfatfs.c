@@ -2141,7 +2141,7 @@ static afatfsOperationStatus_e afatfs_extendSubdirectoryContinue(afatfsFile_t *d
 					dirEntries[1].firstClusterHigh = opState->parentDirectoryCluster >> 16;
 					dirEntries[1].firstClusterLow = opState->parentDirectoryCluster & 0xFFFF;
 					dirEntries[1].attrib = FAT_FILE_ATTRIBUTE_DIRECTORY;
-					printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//					printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 				}
 				
 				if (sectorInCluster < afatfs.sectorsPerCluster - 1) {
@@ -2174,7 +2174,7 @@ static afatfsOperationStatus_e afatfs_extendSubdirectoryContinue(afatfsFile_t *d
 			directory->operation.operation = AFATFS_FILE_OPERATION_NONE;
 			
 			if (opState->callback) {
-				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//				printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 				opState->callback(NULL);
 			}
 			
@@ -2263,7 +2263,7 @@ static afatfsOperationStatus_e afatfs_allocateDirectoryEntry(afatfsFilePtr_t dir
 			/* Need to extend directory size by adding a cluster */
 			result = afatfs_extendSubdirectory(directory, NULL, NULL);
 
-			printf("result: %u, %s, %s, %d\r\n", result, __FILE__, __FUNCTION__, __LINE__);
+//			printf("result: %u, %s, %s, %d\r\n", result, __FILE__, __FUNCTION__, __LINE__);
 			
 			if (result == AFATFS_OPERATION_SUCCESS) {
 				/* Continue the search in the newly-extended directory */
@@ -3418,7 +3418,7 @@ static void afatfs_initContinue(void)
 		
 		case AFATFS_INITIALISATION_DONE:
 //			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
-			afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_READY;
+			afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_READY;		// AFATFS_FILESYSTEM_STATE_READY (3)
 			break;
 	}
 }
@@ -3493,6 +3493,59 @@ void afatfs_init(void)
 #ifdef AFATFS_USE_INTROSPECTIVE_LOGGING
 	sdcard_setProfilerCallback(afatfs_sdcardProfilerCallback);
 #endif
+}
+
+/**
+ * Get a pessimistic estimate of the amount of buffer space that we have available to write to immediately.
+ */
+uint32_t afatfs_getFreeBufferSpace(void)
+{
+	uint32_t result = 0;
+	
+	for (int i = 0; i < AFATFS_NUM_CACHE_SECTORS; i++) {
+		if (!afatfs.cacheDescriptor[i].locked && (afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_EMPTY || afatfs.cacheDescriptor[i].state == AFATFS_CACHE_STATE_IN_SYNC)) {
+			result += AFATFS_SECTOR_SIZE;
+		}
+	}
+	
+	return result;
+}
+
+/**
+ * Return a pointer to a free entry in the open files table (a file whose type is "NONE").
+ * You should initialise the file afterwards with afatfs_initFileHandle().
+ */
+static afatfsFilePtr_t afatfs_allocateFileHandle(void)
+{
+	for (int i = 0; i < AFATFS_MAX_OPEN_FILES; i++) {
+		if (afatfs.openFiles[i].type == AFATFS_FILE_TYPE_NONE) {
+			return &afatfs.openFiles[i];
+		}
+	}
+	
+	return NULL;
+}
+
+/**
+ * Create a new directory with the given name, or open the directory if it already exists.
+ *
+ * The directory will be passed to the callback, or NULL if the creation failed.
+ *
+ * Returns true if the directory creation was begun, or false if there are too many open files.
+ */
+bool afatfs_mkdir(const char *filename, afatfsFileCallback_t callback)
+{
+	afatfsFilePtr_t file = afatfs_allocateFileHandle();
+	
+//	printf("file: 0x%x, %s, %s, %d\r\n", (uint32_t)file, __FILE__, __FUNCTION__, __LINE__);	// file address: 0x20002a34
+	
+	if (file) {
+		afatfs_createFile(file, filename, FAT_FILE_ATTRIBUTE_DIRECTORY, AFATFS_FILE_MODE_CREATE | AFATFS_FILE_MODE_READ | AFATFS_FILE_MODE_WRITE, callback);
+	} else if (callback) {
+		callback(NULL);
+	}
+	
+	return file != NULL;
 }
 
 /* +------------------------------------------------------------------------------------------------------------------------------- */

@@ -250,7 +250,8 @@ int main(void)
 //	buttonInit();
 
 	/* Timer must be initialised before any channel is allocated */
-	timerInit();
+	timerInit();					// reinitialise the LED IO configuration to timer AF_PP if USE_LEDTIMER has been set.
+									// INFO: To use NORMAL LEDs, turn off the USE_LEDTIMER micro in target.h
 
 #if defined(USE_LEDTIMER)
 //	uint16_t idlePulse = LedTimerConfig()->mincommand;

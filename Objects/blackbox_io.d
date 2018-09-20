@@ -1,4 +1,5 @@
 .\objects\blackbox_io.o: src\quad\blackbox\blackbox_io.c
+.\objects\blackbox_io.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\blackbox_io.o: .\src\quad\config\configMaster.h
 .\objects\blackbox_io.o: .\src\quad\drivers\led.h
 .\objects\blackbox_io.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
@@ -65,3 +66,5 @@
 .\objects\blackbox_io.o: src\quad\blackbox\blackbox_io.h
 .\objects\blackbox_io.o: .\src\quad\io\asyncfatfs\asyncfatfs.h
 .\objects\blackbox_io.o: .\src\quad\io\asyncfatfs\fat_standard.h
+.\objects\blackbox_io.o: .\src\quad\common\maths.h
+.\objects\blackbox_io.o: F:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h

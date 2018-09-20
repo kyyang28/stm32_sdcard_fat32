@@ -21,10 +21,7 @@ void updateLEDs(void)
 	
 	if (CHECK_ARMING_FLAG(ARMED)) {
 //		printf("ARMED, %s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
-		LED3_ON;
-		LED4_ON;
-		LED5_ON;
-		LED6_ON;
+		LED3_ON; LED4_ON; LED5_ON; LED6_ON;
 	} else {
 //		printf("Not ARMED: %s, %d\r\n", __FUNCTION__, __LINE__);
 		ENABLE_ARMING_FLAG(OK_TO_ARM);
@@ -102,7 +99,13 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 {
 #ifdef USE_SDCARD
 	afatfs_poll();
-#endif	
+#endif
+	
+#ifdef BLACKBOX
+	if (/*!cliMode && */feature(FEATURE_BLACKBOX)) {
+		handleBlackbox(currentTimeUs);
+	}
+#endif
 }
 
 void taskMainPidLoop(timeUs_t currentTimeUs)

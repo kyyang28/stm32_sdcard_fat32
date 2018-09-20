@@ -10,6 +10,13 @@
  */
 #define BLACKBOX_TARGET_HEADER_BUDGET_PER_ITERATION					64
 
+/**
+ * We want to limit how bursty our writes to the device are.
+ * Note that this will also restrict the maximum size of a 
+ * header write we can make.
+ */
+#define BLACKBOX_MAX_ACCUMULATED_HEADER_BUDGET						256
+
 extern int32_t blackboxHeaderBudget;
 
 typedef enum BlackboxDevice {
@@ -25,5 +32,8 @@ typedef enum BlackboxDevice {
 }BlackboxDevice;
 
 bool blackboxDeviceOpen(void);
+void blackboxReplenishHeaderBudget(void);
+
+bool blackboxDeviceBeginLog(void);
 
 #endif	// __BLACKBOX_IO_H

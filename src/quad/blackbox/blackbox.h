@@ -1,6 +1,8 @@
 #ifndef __BLACKBOX_H
 #define __BLACKBOX_H
 
+#include "time.h"
+
 typedef struct blackboxConfig_s {
 	uint8_t rate_num;
 	uint8_t rate_denom;
@@ -13,6 +15,8 @@ typedef enum {
 	BLACKBOX_SPIFLASH,
 	BLACKBOX_SDCARD
 }blackBoxDevice_e;
+
+void handleBlackbox(timeUs_t currentTimeUs);
 
 void initBlackbox(void);
 void startBlackbox(void);

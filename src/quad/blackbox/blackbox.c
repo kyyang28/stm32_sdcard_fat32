@@ -10,8 +10,27 @@
 #include "configMaster.h"
 #include "system.h"
 #include "blackbox_io.h"
+#include "axis.h"
+#include "mixer.h"
 
 #define SLOW_FRAME_INTERVAL						4096
+
+typedef struct blackboxMainState_s {
+	uint32_t time;
+	
+	int32_t axisPID_P[XYZ_AXIS_COUNT], axisPID_I[XYZ_AXIS_COUNT], axisPID_D[XYZ_AXIS_COUNT];
+	
+	int16_t rcCommand[4];
+	int16_t gyroADC[XYZ_AXIS_COUNT];
+	int16_t accSmooth[XYZ_AXIS_COUNT];
+	int16_t debug[4];
+	int16_t motor[MAX_SUPPORTED_MOTORS];
+	
+	uint16_t vbatLastest;
+	uint16_t amperageLatest;
+	
+	uint16_t rssi;
+}blackboxMainState_t;
 
 typedef enum BlackboxState {
 	BLACKBOX_STATE_DISABLED = 0,				// 0
@@ -27,6 +46,9 @@ typedef enum BlackboxState {
 	BLACKBOX_STATE_RUNNING,						// 10
 	BLACKBOX_STATE_SHUTTING_DOWN				// 11
 }BlackboxState;
+
+#define BLACKBOX_FIRST_HEADER_SENDING_STATE			BLACKBOX_STATE_SEND_HEADER
+#define BLACKBOX_LAST_HEADER_SENDING_STATE			BLACKBOX_STATE_SEND_SYSINFO
 
 static struct {
 	uint32_t headerIndex;
@@ -45,6 +67,18 @@ static BlackboxState blackboxState = BLACKBOX_STATE_DISABLED;
 static bool blackboxLoggedAnyFrames;
 
 static uint16_t blackboxSlowFrameIterationTimer;
+
+/* Keep a history of length 2, plus a buffer for MW to store the new values into. */
+static blackboxMainState_t blackboxHistoryRing[3];
+
+/* These point into blackboxHistoryRing, use them to know where to store history of a given age (0, 1 or 2 generations old) */
+static blackboxMainState_t *blackboxHistory[3];
+
+/**
+ * We store voltages in I-frames relative to this, which was the voltage when the blackbox was activated.
+ * This helps out since the voltage is only expected to fall from that point and we can reduce our diffs to encode.
+ */
+static uint16_t vbatReference;
 
 static int gcd(int num, int denom)
 {
@@ -151,16 +185,34 @@ void startBlackbox(void)
 		/* Check if blackbox device is open or not */
 		if (!blackboxDeviceOpen()) {
 			blackboxSetState(BLACKBOX_STATE_DISABLED);
+			return;
 		}
 		
 		/* Initialise history */
+		blackboxHistory[0] = &blackboxHistoryRing[0];
+		blackboxHistory[1] = &blackboxHistoryRing[1];
+		blackboxHistory[2] = &blackboxHistoryRing[2];
 		
+//		vbatReference = vbatLatest;
 		
 		/* Build blackbox condition cache */
+//		blackboxBuildConditionCache();
 		
+//        blackboxModeActivationConditionPresent = isModeActivationConditionPresent(modeActivationProfile()->modeActivationConditions, BOXBLACKBOX);
+
+//        blackboxIteration = 0;
+//        blackboxPFrameIndex = 0;
+//        blackboxIFrameIndex = 0;
+
+        /*
+         * Record the beeper's current idea of the last arming beep time, so that we can detect it changing when
+         * it finally plays the beep for this arming event.
+         */
+//        blackboxLastArmingBeep = getArmingBeepTimeMicros();
+//        blackboxLastFlightModeFlags = rcModeActivationMask; 		// record startup status		
 		
 		/* Set blackboxState to BLACKBOX_STATE_PREPARE_LOG_FILE (2) */
-		
+		blackboxSetState(BLACKBOX_STATE_PREPARE_LOG_FILE);
 	}
 }
 
@@ -168,6 +220,31 @@ static bool canUseBlackboxWithCurrentConfiguration(void)
 {
 	return feature(FEATURE_BLACKBOX) && 
 		(BlackboxConfig()->device != BLACKBOX_SDCARD || feature(FEATURE_SDCARD));
+}
+
+void handleBlackbox(timeUs_t currentTimeUs)
+{
+//	int i;
+	
+	if (blackboxState >= BLACKBOX_FIRST_HEADER_SENDING_STATE && blackboxState <= BLACKBOX_LAST_HEADER_SENDING_STATE) {
+		blackboxReplenishHeaderBudget();
+	}
+	
+	switch (blackboxState) {
+		case BLACKBOX_STATE_PREPARE_LOG_FILE:
+			/* Keeps calling blackboxDeviceBeginLog() until the function returns true */
+			if (blackboxDeviceBeginLog()) {
+				blackboxSetState(BLACKBOX_STATE_SEND_HEADER);
+			}
+			break;
+		
+		case BLACKBOX_STATE_SEND_HEADER:
+			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			break;
+			
+		default:
+			break;
+	}
 }
 
 void initBlackbox(void)

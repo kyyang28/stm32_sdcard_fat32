@@ -57,4 +57,9 @@ void afatfs_init(void);
 bool afatfs_flush(void);
 void afatfs_poll(void);
 
+uint32_t afatfs_getFreeBufferSpace(void);
+
+/* API functions */
+bool afatfs_mkdir(const char *filename, afatfsFileCallback_t callback);
+
 #endif	// __ASYNCFATFS_H
