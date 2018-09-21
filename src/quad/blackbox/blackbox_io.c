@@ -222,7 +222,8 @@ static bool blackboxSDCardBeginLog(void)
 						remainder /= 10;
 					}
 					
-					if (!afatfs_fopen(filename, "as", blackboxLogFileCreated)) {
+					/* Create a new file ONLY if it doesn't exist on the SDCard */
+					if (!afatfs_fopen(filename, "as", blackboxLogFileCreated)) {		// JUST FOR TESTING
 						printf("Failed to open file!!\r\n");
 					}
 					
@@ -234,7 +235,7 @@ static bool blackboxSDCardBeginLog(void)
 					 * we can call afatfs_fclose() function when disarming the quadcopter or when the powered wheelchair joystick 
 					 * doesn't move for 10 seconds or something.
 					 */
-					afatfs_fclose(blackboxSDCard.logFile, NULL);
+					afatfs_fclose(blackboxSDCard.logFile, NULL);						// JUST FOR TESTING
 				}
 #endif
 				
