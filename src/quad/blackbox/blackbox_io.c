@@ -232,8 +232,8 @@ static bool blackboxSDCardBeginLog(void)
 					 * it requires to close the file handle if the file does not need to be written or read. TO DO SO, 
 					 * set the file->type to AFATFS_FILE_TYPE_NONE, which free the file handle in order to create a new file.
 					 * 
-					 * we can call afatfs_fclose() function when disarming the quadcopter or when the powered wheelchair joystick 
-					 * doesn't move for 10 seconds or something.
+					 * we can call afatfs_fclose() function when disarming the quadcopter (calling mwDisarm() function) or 
+					 * when the joystick of the powered wheelchair doesn't move for 10 seconds (changeable).
 					 */
 					afatfs_fclose(blackboxSDCard.logFile, NULL);						// JUST FOR TESTING
 				}
