@@ -20,7 +20,8 @@
 
 #define AFATFS_NUM_CACHE_SECTORS					8
 
-#define AFATFS_MAX_OPEN_FILES						3
+#define AFATFS_MAX_OPEN_FILES						3			// WHY 3 ??!!
+//#define AFATFS_MAX_OPEN_FILES						32
 
 /* In MBR (Master Boot Record), the partition table starts at offset (in Hexademical) 0x1BE which is 446 (in Integer)
  *
@@ -371,7 +372,7 @@ typedef union afatfsFATSector_t {
 }afatfsFATSector_t;
 
 typedef struct afatfsFile_t {
-	afatfsFileType_e type;
+	afatfsFileType_e type;			// AFATFS_FILE_TYPE_DIRECTORY
 	
 	/* The byte offset of the cursor within the file */
 	uint32_t cursorOffset;
@@ -407,10 +408,10 @@ typedef struct afatfsFile_t {
 	 */
 	uint32_t cursorPreviousCluster;
 	
-	/* A combination of AFATFS_FILE_MODE_* flags */
+	/* A combination of AFATFS_FILE_MODE_* flags (e.g. AFATFS_FILE_MODE_CREATE) */
 	uint8_t mode;
 	
-	/* Combination of AFATFS_FILE_ATTRIBUTE_* flags for directory entry of this file */
+	/* Combination of AFATFS_FILE_ATTRIBUTE_* flags for directory entry of this file (e.g. FAT_FILE_ATTRIBUTE_DIRECTORY) */
 	uint8_t attrib;
 	
 	/*
@@ -1491,17 +1492,30 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 		return false;
 	}
 	
+//	printf("directory addr: 0x%x, %s, %s, %d\r\n", (uint32_t)directory, __FILE__, __FUNCTION__, __LINE__);
+	
 	if (directory) {
 //		printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 		/* Directory is NOT NULL */
 		if (afatfs_fileIsBusy(directory)) {
 			return false;		// file operation is busy
 		}
+
+//		printf("directory->type: %u\r\n", directory->type);									// 3 (AFATFS_FILE_TYPE_DIRECTORY)
+//		printf("directory->attrib: %u\r\n", directory->attrib);								// 16 (FAT_FILE_ATTRIBUTE_DIRECTORY)
+//		printf("directory->operation.operation: %u\r\n", directory->operation.operation);	// 0 (AFATFS_FILE_OPERATION_NONE)
 		
 		/* file operation is NOT busy */
 		memcpy(&afatfs.currentDirectory, directory, sizeof(*directory));
+		
+//		printf("afatfs.currentDirectory addr: 0x%x, %s, %s, %d\r\n", (uint32_t)&afatfs.currentDirectory, __FILE__, __FUNCTION__, __LINE__);
 //		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//		printf("afatfs.currentDirectory.type: %u\r\n", afatfs.currentDirectory.type);						// 3 (AFATFS_FILE_TYPE_DIRECTORY)
+//		printf("afatfs.currentDirectory.attrib: %u\r\n", afatfs.currentDirectory.attrib);					// 16 (FAT_FILE_ATTRIBUTE_DIRECTORY)
+//		printf("afatfs.currentDirectory.operation: %u\r\n", afatfs.currentDirectory.operation.operation);	// 0 (AFATFS_FILE_OPERATION_NONE)
+
 		return true;
+
 	} else {
 		/* Directory is NULL */
 		/* Initialise file handle
@@ -1548,6 +1562,8 @@ bool afatfs_chdir(afatfsFilePtr_t directory)
 		
 		/* Call afatfs_fseek() to seek the current directory */
 		afatfs_fseek(&afatfs.currentDirectory, 0, AFATFS_SEEK_SET);		// update file->logicalSize
+		
+		return true;
 	}
 }
 
@@ -2498,8 +2514,11 @@ static void afatfs_createFileContinue(afatfsFile_t *file)
             file->operation.operation = AFATFS_FILE_OPERATION_NONE;
 //			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
 			
+//			printf("opState->callback: 0x%x, %s, %d\r\n", (unsigned int)opState->callback, __FUNCTION__, __LINE__);
+			
 			/* afatfsCreateFile_t *opState = &file->operation.state.createFile */
             opState->callback(file);										// calling afatfs_freeFileCreated() callback function
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			break;
 		
 		case AFATFS_CREATEFILE_PHASE_FAILURE:
@@ -2579,8 +2598,12 @@ static afatfsFilePtr_t afatfs_createFile(afatfsFilePtr_t file, const char *name,
 		}
 	}
 	
+//	printf("file->type: %u\r\n", file->type);
+	
 	/* Initialise file->operation.state.createFile.callback = callback */
 	opState->callback = callback;			// opState->callback = afatfs_freeFileCreated()
+	
+//	printf("opState->callback: 0x%x, %s, %d\r\n", (unsigned int)opState->callback, __FUNCTION__, __LINE__);
 	
 //	printf("name: %s, %s, %d\r\n", name, __FUNCTION__, __LINE__);
 	if (strcmp(name, ".") == 0) {
@@ -3519,6 +3542,7 @@ uint32_t afatfs_getFreeBufferSpace(void)
 static afatfsFilePtr_t afatfs_allocateFileHandle(void)
 {
 	for (int i = 0; i < AFATFS_MAX_OPEN_FILES; i++) {
+//		printf("afatfs.openFiles[%d].type: %u\r\n", i, afatfs.openFiles[i].type);
 		if (afatfs.openFiles[i].type == AFATFS_FILE_TYPE_NONE) {
 			return &afatfs.openFiles[i];
 		}
@@ -3580,6 +3604,8 @@ bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t c
 	uint8_t fileMode = 0;
 	afatfsFilePtr_t file;
 	
+//	printf("mode[0]: %c\r\n", mode[0]);
+	
 	switch (mode[0]) {
 		case 'r':
 			fileMode = AFATFS_FILE_MODE_READ;
@@ -3594,6 +3620,7 @@ bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t c
 			break;
 	}
 	
+//	printf("mode[1]: %c\r\n", mode[1]);
 	switch (mode[1]) {
 		case '+':
 			fileMode |= AFATFS_FILE_MODE_READ;
@@ -3613,12 +3640,13 @@ bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t c
 	file = afatfs_allocateFileHandle();
 	
 	if (file) {
-		printf("fileMode: 0x%x, %s, %s, %d\r\n", fileMode, __FILE__, __FUNCTION__, __LINE__);
+//		printf("fileMode: 0x%x, %s, %s, %d\r\n", fileMode, __FILE__, __FUNCTION__, __LINE__);
 		afatfs_createFile(file, filename, FAT_FILE_ATTRIBUTE_ARCHIVE, fileMode, complete);
 	} else if (complete) {
 		complete(NULL);
 	}
 	
+//	printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 	return file != NULL;
 }
 

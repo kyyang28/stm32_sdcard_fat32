@@ -131,7 +131,7 @@ static uint32_t getFLASHSectorForEEPROM(void)
 		return FLASH_Sector_11;
 	
 	while (1) {
-		printf("Wrong FLASH sector for EEPROM!!\r\n");
+//		printf("Wrong FLASH sector for EEPROM!!\r\n");
 	}
 }
 

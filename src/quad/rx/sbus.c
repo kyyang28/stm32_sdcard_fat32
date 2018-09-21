@@ -210,56 +210,56 @@ static uint8_t sbusFrameStatus(void)
 	return RX_FRAME_COMPLETE;
 }
 
-static void printSBUSDataInBin(uint16_t c)
-{
-	if ((c & 0x80) == 128) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x40) == 64) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x20) == 32) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x10) == 16) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x8) == 8) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x4) == 4) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x2) == 2) {
-		printf("%c", '1');
-	}else {
-		printf("%c", '0');
-	}
-	
-	if ((c & 0x1) == 1) {
-		printf("%c ", '1');
-	}else {
-		printf("%c ", '0');
-	}	
-}
+//static void printSBUSDataInBin(uint16_t c)
+//{
+//	if ((c & 0x80) == 128) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x40) == 64) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x20) == 32) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x10) == 16) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x8) == 8) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x4) == 4) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x2) == 2) {
+//		printf("%c", '1');
+//	}else {
+//		printf("%c", '0');
+//	}
+//	
+//	if ((c & 0x1) == 1) {
+//		printf("%c ", '1');
+//	}else {
+//		printf("%c ", '0');
+//	}	
+//}
 
 /* SBUS receive ISR callback function */
 static void sbusDataReceiveCallBack(uint16_t c)

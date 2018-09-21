@@ -78,7 +78,7 @@ static blackboxMainState_t *blackboxHistory[3];
  * We store voltages in I-frames relative to this, which was the voltage when the blackbox was activated.
  * This helps out since the voltage is only expected to fall from that point and we can reduce our diffs to encode.
  */
-static uint16_t vbatReference;
+//static uint16_t vbatReference;
 
 static int gcd(int num, int denom)
 {
@@ -239,7 +239,7 @@ void handleBlackbox(timeUs_t currentTimeUs)
 			break;
 		
 		case BLACKBOX_STATE_SEND_HEADER:
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			break;
 			
 		default:

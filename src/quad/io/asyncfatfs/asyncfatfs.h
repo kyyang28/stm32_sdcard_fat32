@@ -6,6 +6,8 @@
 
 #include "fat_standard.h"
 
+struct afatfsFile_t;
+
 typedef struct afatfsFile_t *afatfsFilePtr_t;
 
 typedef enum {
