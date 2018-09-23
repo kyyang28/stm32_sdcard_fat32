@@ -3177,7 +3177,7 @@ static void afatfs_fileOperationContinue(afatfsFile_t *file)
 	
     switch (file->operation.operation) {
         case AFATFS_FILE_OPERATION_CREATE_FILE:
-//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);		// Invoked, DONE!!!!
             afatfs_createFileContinue(file);
         break;
         case AFATFS_FILE_OPERATION_SEEK:
@@ -3211,11 +3211,11 @@ static void afatfs_fileOperationContinue(afatfsFile_t *file)
             afatfs_appendRegularFreeClusterContinue(file);
         break;
         case AFATFS_FILE_OPERATION_EXTEND_SUBDIRECTORY:
-			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);		// Invoked, DONE!!!!
             afatfs_extendSubdirectoryContinue(file);
         break;
         case AFATFS_FILE_OPERATION_NONE:
-//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);		// Invoked, DONE!!!!
             ;
         break;
     }

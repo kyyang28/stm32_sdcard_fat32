@@ -181,6 +181,10 @@ static bool blackboxSDCardBeginLog(void)
 	
 	doMore:
 	
+	/**
+	 * NOTE: According to AFATFS_MAX_OPEN_FILES (3), there are MAXIMUM 3 folders and/or files that can be created on the SDCard.
+	 * So to create more FOLDERs and/or FILEs, we need to call afatfs_fclose() function to FREE the afatfs.openFiles[1-3].type to AFATFS_FILE_TYPE_NONE.
+	 */
 	switch (blackboxSDCard.state) {
 		case BLACKBOX_SDCARD_INITIAL:
 //			printf("afatfs_getFilesystemState(): %u, %s, %s, %d\r\n", afatfs_getFilesystemState(), __FILE__, __FUNCTION__, __LINE__);
@@ -265,7 +269,6 @@ static bool blackboxSDCardBeginLog(void)
 			break;
 		
 		case BLACKBOX_SDCARD_ENUMERATE_FILES:		// list all the files we need to create on the SDCard.
-#if 1
 			while (afatfs_findNext(blackboxSDCard.logDirectory, &blackboxSDCard.logDirectoryFinder, &directoryEntry) == AFATFS_OPERATION_SUCCESS) {
 				if (directoryEntry && !fat_isDirectoryEntryTerminator(directoryEntry)) {
 //					printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
@@ -289,29 +292,23 @@ static bool blackboxSDCardBeginLog(void)
 					goto doMore;
 				}
 			}
-#endif			
 			break;
 		
 		case BLACKBOX_SDCARD_CHANGE_INTO_LOG_DIRECTORY:
-#if 1
 			/* Change into the log directory */
 			if (afatfs_chdir(blackboxSDCard.logDirectory)) {
 				/* We no longer need our open handle on the log directory */
 				afatfs_fclose(blackboxSDCard.logDirectory, NULL);
 				blackboxSDCard.logDirectory = NULL;
 
-				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 								
 				blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_CREATE_LOG;
 				
 //				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 				
 				goto doMore;
-			}
-#endif
-			
-//			blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_CREATE_LOG;
-			
+			}			
 			break;
 		
 		case BLACKBOX_SDCARD_READY_TO_CREATE_LOG:
@@ -321,8 +318,8 @@ static bool blackboxSDCardBeginLog(void)
 		
 		case BLACKBOX_SDCARD_READY_TO_LOG:
 			/* Log has been created!! */
-			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
-			return true;
+//			printf("%s, %d\r\n", __FUNCTION__, __LINE__);
+			return true;			// Returns true if log file has been created under LOGS directory
 	}
 	
 	return false;	// Not finished init yet.

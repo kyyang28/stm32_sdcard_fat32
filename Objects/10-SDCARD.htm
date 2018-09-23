@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\10-SDCARD.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\10-SDCARD.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sun Sep 23 13:28:55 2018
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Sun Sep 23 13:31:53 2018
 <BR><P>
 <H3>Maximum Stack Usage =        576 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -556,6 +556,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[17f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spiTransfer
 <LI><a href="#[14e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rxInit
 <LI><a href="#[18a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spiInitDevice
+<LI><a href="#[13f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;handleBlackbox
 <LI><a href="#[f3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_fseek
 <LI><a href="#[104]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_fileOperationContinue
 <LI><a href="#[dc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_assert
@@ -1771,11 +1772,12 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[13f]"></a>handleBlackbox</STRONG> (Thumb, 42 bytes, Stack size 8 bytes, blackbox.o(i.handleBlackbox))
+<P><STRONG><a name="[13f]"></a>handleBlackbox</STRONG> (Thumb, 62 bytes, Stack size 8 bytes, blackbox.o(i.handleBlackbox))
 <BR><BR>[Stack]<UL><LI>Max Depth = 560 + Unknown Stack Size
 <LI>Call Chain = handleBlackbox &rArr; blackboxDeviceBeginLog &rArr; blackboxSDCardBeginLog &rArr; blackboxCreateLogFile &rArr; afatfs_fopen &rArr; afatfs_createFile &rArr; afatfs_createFileContinue &rArr; afatfs_allocateDirectoryEntry &rArr; afatfs_extendSubdirectoryContinue &rArr; afatfs_appendRegularFreeClusterContinue &rArr; afatfs_findClusterWithCondition &rArr; afatfs_cacheSector &rArr; sdcard_readBlock &rArr; sdcard_sendCommand &rArr; spiTransfer &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
 </UL>
-<BR>[Calls]<UL><LI><a href="#[11b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;blackboxReplenishHeaderBudget
+<BR>[Calls]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
+<LI><a href="#[11b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;blackboxReplenishHeaderBudget
 <LI><a href="#[116]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;blackboxDeviceBeginLog
 <LI><a href="#[11d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;blackboxSetState
 </UL>
@@ -3062,7 +3064,7 @@ Local Symbols
 <LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;afatfs_allocateDirectoryEntry
 </UL>
 
-<P><STRONG><a name="[104]"></a>afatfs_fileOperationContinue</STRONG> (Thumb, 240 bytes, Stack size 16 bytes, asyncfatfs.o(i.afatfs_fileOperationContinue))
+<P><STRONG><a name="[104]"></a>afatfs_fileOperationContinue</STRONG> (Thumb, 228 bytes, Stack size 16 bytes, asyncfatfs.o(i.afatfs_fileOperationContinue))
 <BR><BR>[Stack]<UL><LI>Max Depth = 448 + Unknown Stack Size
 <LI>Call Chain = afatfs_fileOperationContinue &rArr; afatfs_createFileContinue &rArr; afatfs_allocateDirectoryEntry &rArr; afatfs_extendSubdirectoryContinue &rArr; afatfs_appendRegularFreeClusterContinue &rArr; afatfs_findClusterWithCondition &rArr; afatfs_cacheSector &rArr; sdcard_readBlock &rArr; sdcard_sendCommand &rArr; spiTransfer &rArr; __2printf &rArr; _printf_char_file &rArr; _printf_char_common &rArr; __printf
 </UL>
