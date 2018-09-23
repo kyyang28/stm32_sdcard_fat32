@@ -133,7 +133,7 @@ static void blackboxLogFileCreated(afatfsFilePtr_t file)
 		blackboxSDCard.largestLogFileNumber++;
 		
 		blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_LOG;
-//		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+		printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 	} else {
 		/* Retry */
 		blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_CREATE_LOG;
@@ -239,7 +239,7 @@ static bool blackboxSDCardBeginLog(void)
 				}
 #endif
 				
-				/*				
+				/*
 					file->attrib: 5
 					file->type: 1
 					afatfs.openFiles[0].type: 0
@@ -265,6 +265,7 @@ static bool blackboxSDCardBeginLog(void)
 			break;
 		
 		case BLACKBOX_SDCARD_ENUMERATE_FILES:		// list all the files we need to create on the SDCard.
+#if 1
 			while (afatfs_findNext(blackboxSDCard.logDirectory, &blackboxSDCard.logDirectoryFinder, &directoryEntry) == AFATFS_OPERATION_SUCCESS) {
 				if (directoryEntry && !fat_isDirectoryEntryTerminator(directoryEntry)) {
 //					printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
@@ -288,29 +289,34 @@ static bool blackboxSDCardBeginLog(void)
 					goto doMore;
 				}
 			}
+#endif			
 			break;
 		
 		case BLACKBOX_SDCARD_CHANGE_INTO_LOG_DIRECTORY:
+#if 1
 			/* Change into the log directory */
 			if (afatfs_chdir(blackboxSDCard.logDirectory)) {
 				/* We no longer need our open handle on the log directory */
 				afatfs_fclose(blackboxSDCard.logDirectory, NULL);
 				blackboxSDCard.logDirectory = NULL;
-				
+
+				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+								
 				blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_CREATE_LOG;
 				
 //				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 				
 				goto doMore;
 			}
+#endif
+			
+//			blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_CREATE_LOG;
+			
 			break;
 		
 		case BLACKBOX_SDCARD_READY_TO_CREATE_LOG:
 //			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
-//			blackboxCreateLogFile();
-//			if (!afatfs_fopen("LOG00001.YQL", "as", blackboxLogFileCreated)) {
-//				printf("Failed to open file!!\r\n");
-//			}
+			blackboxCreateLogFile();
 			break;
 		
 		case BLACKBOX_SDCARD_READY_TO_LOG:
