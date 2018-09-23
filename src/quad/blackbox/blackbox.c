@@ -239,7 +239,12 @@ void handleBlackbox(timeUs_t currentTimeUs)
 			break;
 		
 		case BLACKBOX_STATE_SEND_HEADER:
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+			/* On entry of this state, xmitState.headerIndex is 0 and startTime is initiallised */
+		
+			/**
+		     * 
+			 */
 			break;
 			
 		default:

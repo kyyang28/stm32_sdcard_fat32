@@ -192,7 +192,11 @@ static bool blackboxSDCardBeginLog(void)
 //				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 				blackboxSDCard.state = BLACKBOX_SDCARD_WAITING;
 				
-				/* Create "logs" directory(folder) on the SDCard */
+				/* Create "logs" directory(folder) on the SDCard
+				 * 
+				 * TODO: HERE we can use RTC time and date as the directory name instead of "logs".
+				 * Merge RTC programs later
+				 */
 				afatfs_mkdir("logs", blackboxLogDirCreated);
 //				afatfs_mkdir("quadLogs", blackboxLogDirCreated);	// just for testing
 //				afatfs_mkdir("pwcLogs", blackboxLogDirCreated);	// just for testing
