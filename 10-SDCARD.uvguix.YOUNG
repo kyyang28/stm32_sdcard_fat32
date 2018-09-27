@@ -1887,9 +1887,9 @@
       </Doc>
       <Doc>
         <Name>.\src\quad\blackbox\blackbox.c</Name>
-        <ColumnNumber>28</ColumnNumber>
-        <TopLine>237</TopLine>
-        <CurrentLine>256</CurrentLine>
+        <ColumnNumber>34</ColumnNumber>
+        <TopLine>254</TopLine>
+        <CurrentLine>266</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders></ContractedFolders>
         <PaneID>0</PaneID>
@@ -1941,9 +1941,9 @@
       </Doc>
       <Doc>
         <Name>.\src\quad\blackbox\blackbox_io.c</Name>
-        <ColumnNumber>30</ColumnNumber>
-        <TopLine>413</TopLine>
-        <CurrentLine>435</CurrentLine>
+        <ColumnNumber>0</ColumnNumber>
+        <TopLine>418</TopLine>
+        <CurrentLine>434</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders></ContractedFolders>
         <PaneID>0</PaneID>

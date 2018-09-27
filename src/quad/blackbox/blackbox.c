@@ -246,21 +246,24 @@ void handleBlackbox(timeUs_t currentTimeUs)
 		     * JUST FOR TESTING RIGHT NOW.
 		     * Write a dummy contents to the SDCard and read it.
 		     */
-			blackboxWrite('Y');
-			blackboxWrite('\n');
-			blackboxWrite('A');
-			blackboxWrite('\n');
-			blackboxWrite('N');
-			blackboxWrite('\n');
-			blackboxWrite('G');
-			blackboxWrite('\n');
-//			blackboxPrint("Start of log");
-				
+			blackboxPrint("Start of log\n");
+			blackboxPrint("Yankun YANG\n");
+//			blackboxWrite('Y');
+//			blackboxWrite('\n');
+//			blackboxWrite('A');
+//			blackboxWrite('\n');
+//			blackboxWrite('N');
+//			blackboxWrite('\n');
+//			blackboxWrite('G');
+//			blackboxWrite('\n');
+
+#if 0
 			if (blackboxDeviceFlushForce()) {
 //				printf("Flush the contents to SDCard successfully!\r\n");
 			}
+#endif
 			
-			blackboxStopLogging();			
+			blackboxStopLogging();
 		
 			/**
 		     * Once the UART has had time to init, transmit the header in chunks so we don't overflow its transmit buffer,
