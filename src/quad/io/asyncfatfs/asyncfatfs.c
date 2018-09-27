@@ -50,7 +50,7 @@
 /* 	Turn the largest free block on the disk into one contiguous file 
  *	for efficient fragment-free allocation
  */
-#define AFATFS_USE_FREEFILE
+//#define AFATFS_USE_FREEFILE
 
 /* When allocating a freefile, leave this many clusters un-allocated for regular files to use */
 #define AFATFS_FREEFILE_LEAVE_CLUSTERS 				100
@@ -2660,6 +2660,8 @@ static afatfsFilePtr_t afatfs_createFile(afatfsFilePtr_t file, const char *name,
 	return file;
 }
 
+#ifdef AFATFS_USE_FREEFILE
+
 /**
  * Call to set up the initial state for finding the largest block of free space on the device whose corresponding FAT
  * sectors are themselves entirely free space (so the free space has dedicated FAT sectors of its own).
@@ -2701,6 +2703,7 @@ static void afatfs_freeFileCreated(afatfsFile_t *file)
 		afatfs.filesystemState = AFATFS_FILESYSTEM_STATE_FATAL;
 	}
 }
+#endif
 
 /**
  * Bring the logical filesize up to date with the current cursor position.
@@ -3297,6 +3300,8 @@ static void afatfs_fileOperationContinue(afatfsFile_t *file)
     }
 }
 
+#ifdef AFATFS_USE_FREEFILE
+
 /**
  * Call to continue the search for the largest contiguous block of free space on the device.
  *
@@ -3376,6 +3381,7 @@ static afatfsOperationStatus_e afatfs_findLargestContiguousFreeBlockContinue(voi
         }
     }
 }
+#endif
 
 static void afatfs_initContinue(void)
 {
@@ -3682,12 +3688,12 @@ static afatfsOperationStatus_e afatfs_appendFreeCluster(afatfsFilePtr_t file)
 	if ((file->mode & AFATFS_FILE_MODE_CONTIGUOUS) != 0) {
 		/* Steal the first cluster from the beginning of the freefile if we can */
 		status = afatfs_appendSupercluster(file);
-		printf("status: %u, %s, %d\r\n", status, __FUNCTION__, __LINE__);
+//		printf("status: %u, %s, %d\r\n", status, __FUNCTION__, __LINE__);
 	} else
 #endif
 	{
 		status = afatfs_appendRegularFreeCluster(file);
-		printf("status: %u, %s, %d\r\n", status, __FUNCTION__, __LINE__);
+//		printf("status: %u, %s, %d\r\n", status, __FUNCTION__, __LINE__);
 	}
 	
 	return status;
@@ -3774,7 +3780,7 @@ bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t c
 		
 		case 's':
 #ifdef AFATFS_USE_FREEFILE
-//			fileMode |= AFATFS_FILE_MODE_CONTIGUOUS | AFATFS_FILE_MODE_RETAIN_DIRECTORY;
+			fileMode |= AFATFS_FILE_MODE_CONTIGUOUS | AFATFS_FILE_MODE_RETAIN_DIRECTORY;
 #endif
 			break;
 	}
@@ -3836,11 +3842,11 @@ static uint8_t *afatfs_fileLockCursorSectorForWrite(afatfsFilePtr_t file)
 		uint32_t offsetOfStartOfSector = file->cursorOffset & ~((uint32_t) AFATFS_SECTOR_SIZE - 1);
 		uint32_t offsetOfEndOfSector = offsetOfStartOfSector + AFATFS_SECTOR_SIZE;
 		
-		printf("physicalSector: %u, %d\r\n", physicalSector, __LINE__);
-		printf("cacheFlags: %u, %d\r\n", cacheFlags, __LINE__);
-		printf("cursorOffsetInSector: %u, %d\r\n", cursorOffsetInSector, __LINE__);
-		printf("offsetOfStartOfSector: %u, %d\r\n", offsetOfStartOfSector, __LINE__);
-		printf("offsetOfEndOfSector: %u, %d\r\n", offsetOfEndOfSector, __LINE__);
+//		printf("physicalSector: %u, %d\r\n", physicalSector, __LINE__);
+//		printf("cacheFlags: %u, %d\r\n", cacheFlags, __LINE__);
+//		printf("cursorOffsetInSector: %u, %d\r\n", cursorOffsetInSector, __LINE__);
+//		printf("offsetOfStartOfSector: %u, %d\r\n", offsetOfStartOfSector, __LINE__);
+//		printf("offsetOfEndOfSector: %u, %d\r\n", offsetOfEndOfSector, __LINE__);
 		
 		/**
 		 * If there is data before the write point in this sector, or there could be data after the write-point
@@ -3850,6 +3856,7 @@ static uint8_t *afatfs_fileLockCursorSectorForWrite(afatfsFilePtr_t file)
 			cacheFlags |= AFATFS_CACHE_READ;
 		}
 		
+#ifdef AFATFS_USE_FREEFILE
 		/* In contiguous append mode, we'll pre-erase the whole supercluster */
 		if ((file->mode & (AFATFS_FILE_MODE_APPEND | AFATFS_FILE_MODE_CONTIGUOUS)) == (AFATFS_FILE_MODE_APPEND | AFATFS_FILE_MODE_CONTIGUOUS)) {
 			/* FREESPAC.E file created on the SDCard takes 3.99 GB */
@@ -3857,14 +3864,16 @@ static uint8_t *afatfs_fileLockCursorSectorForWrite(afatfsFilePtr_t file)
 			
 			eraseBlockCount = afatfs_fatEntriesPerSector() /* 128 */ * afatfs.sectorsPerCluster /* 64 */ - cursorOffsetInSupercluster / AFATFS_SECTOR_SIZE;
 //			printf("eraseBlockCount: %u, %s, %d\r\n", eraseBlockCount, __FUNCTION__, __LINE__);
-		} else {
+		} else
+#endif		
+		{
 			eraseBlockCount = 0;
 		}
 		
 		status = afatfs_cacheSector(physicalSector, &result, cacheFlags, eraseBlockCount);
 		if (status != AFATFS_OPERATION_SUCCESS) {
 			/* Not enough cache available to accept this write / sector not ready for read */
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			return NULL;
 		}
 		
@@ -3906,14 +3915,14 @@ uint32_t afatfs_fwrite(afatfsFilePtr_t file, const uint8_t *buffer, uint32_t len
 		
 		sectorBuffer = afatfs_fileLockCursorSectorForWrite(file);
 		if (!sectorBuffer) {
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			break;			// Cache is currently busy
 		}
 		
-		printf("bytesToWriteThisSector: %u, %s, %d\r\n", bytesToWriteThisSector, __FUNCTION__, __LINE__);
-		printf("buffer: %c, %s, %d\r\n", *buffer, __FUNCTION__, __LINE__);
-		printf("cursorOffsetInSector: %u, %s, %d\r\n", cursorOffsetInSector, __FUNCTION__, __LINE__);
-		printf("sectorBuffer: 0x%x, %s, %d\r\n", (uint32_t)sectorBuffer, __FUNCTION__, __LINE__);
+//		printf("bytesToWriteThisSector: %u, %s, %d\r\n", bytesToWriteThisSector, __FUNCTION__, __LINE__);
+//		printf("buffer: %c, %s, %d\r\n", *buffer, __FUNCTION__, __LINE__);
+//		printf("cursorOffsetInSector: %u, %s, %d\r\n", cursorOffsetInSector, __FUNCTION__, __LINE__);
+//		printf("sectorBuffer: 0x%x, %s, %d\r\n", (uint32_t)sectorBuffer, __FUNCTION__, __LINE__);
 		
 		/* Copy the character that we want to write to the SDCard into sectorBuffer + cursorOffsetInSector */
 		memcpy(sectorBuffer + cursorOffsetInSector, buffer, bytesToWriteThisSector);
@@ -3931,7 +3940,7 @@ uint32_t afatfs_fwrite(afatfsFilePtr_t file, const uint8_t *buffer, uint32_t len
 		 * If the seek has to queue, when the seek completes, it'll update the fileSize for us to contain the cursor.
 		 */
 		if (afatfs_fseekInternal(file, bytesToWriteThisSector, NULL) == AFATFS_OPERATION_IN_PROGRESS) {
-			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
+//			printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 			break;
 		}
 		

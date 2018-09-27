@@ -248,22 +248,31 @@ void handleBlackbox(timeUs_t currentTimeUs)
 		     */
 			blackboxPrint("Start of log\n");
 			blackboxPrint("Yankun YANG\n");
-//			blackboxWrite('Y');
-//			blackboxWrite('\n');
-//			blackboxWrite('A');
-//			blackboxWrite('\n');
-//			blackboxWrite('N');
-//			blackboxWrite('\n');
-//			blackboxWrite('G');
-//			blackboxWrite('\n');
+			blackboxPrint("QUADYANG ");
+			blackboxPrint("ABC\n");
+			blackboxPrint("NFC\n");
+			blackboxWrite('Y');
+			blackboxWrite('\n');
+			blackboxWrite('A');
+			blackboxWrite('\n');
+			blackboxWrite('N');
+			blackboxWrite('\n');
+			blackboxWrite('G');
+			blackboxWrite('\n');
 
 #if 0
+			/**
+			 * We can do flushing here, but the SDCard will flush each round anyway
+			 */
 			if (blackboxDeviceFlushForce()) {
 //				printf("Flush the contents to SDCard successfully!\r\n");
 			}
 #endif
 			
-			blackboxStopLogging();
+			/** blackboxStopLogging() calling afatfs_fclose(blackboxSDCard.logFile, NULL) to close the file handle just for testing
+			 * otherwise, the programs will keep writing information into card
+			 */
+			blackboxStopLogging();	// JUST FOR TESTING, HOWEVER ALWAYS CLOSE FILE HANDLE WHENEVER WE ARE NOT WRITING CONTENTS TO THE SDCARD.
 		
 			/**
 		     * Once the UART has had time to init, transmit the header in chunks so we don't overflow its transmit buffer,
