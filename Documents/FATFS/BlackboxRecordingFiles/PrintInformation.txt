@@ -1,0 +1,27 @@
+
+src\quad\blackbox\blackbox_io.c, blackboxLogFileCreated, 198
+src\quad\blackbox\blackbox_io.c, blackboxLogFileCreated, 198
+status: 0, afatfs_appendFreeCluster, 3690
+src\quad\io\asyncfatfs\asyncfatfs.c, afatfs_fwrite, 3909
+physicalSector: 16640, 3839
+cacheFlags: 6, 3840
+cursorOffsetInSector: 0, 3841
+offsetOfStartOfSector: 0, 3842
+offsetOfEndOfSector: 512, 3843
+bytesToWriteThisSector: 1, afatfs_fwrite, 3913
+buffer: H, afatfs_fwrite, 3914
+cursorOffsetInSector: 0, afatfs_fwrite, 3915
+sectorBuffer: 0x20001fa8, afatfs_fwrite, 3916
+bytesToWriteThisSector: 1, afatfs_fwrite, 3913
+buffer: H, afatfs_fwrite, 3914
+cursorOffsetInSector: 511, afatfs_fwrite, 3915
+sectorBuffer: 0x20001fa8, afatfs_fwrite, 3916
+physicalSector: 16641, 3839
+cacheFlags: 6, 3840
+cursorOffsetInSector: 0, 3841
+offsetOfStartOfSector: 512, 3842
+offsetOfEndOfSector: 1024, 3843
+bytesToWriteThisSector: 1, afatfs_fwrite, 3913
+buffer: H, afatfs_fwrite, 3914
+cursorOffsetInSector: 0, afatfs_fwrite, 3915
+sectorBuffer: 0x20001da8, afatfs_fwrite, 3916

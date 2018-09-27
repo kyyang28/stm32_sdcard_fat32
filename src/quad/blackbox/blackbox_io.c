@@ -17,7 +17,8 @@ int32_t blackboxHeaderBudget;
 #ifdef USE_SDCARD
 
 #define LOGFILE_PREFIX						"LOG"
-#define LOGFILE_SUFFIX						"BFL"
+#define LOGFILE_SUFFIX						"txt"
+//#define LOGFILE_SUFFIX						"BFL"
 
 static struct {
 	afatfsFilePtr_t logFile;
@@ -71,6 +72,57 @@ bool blackboxDeviceOpen(void)
 	return false;
 }
 
+void blackboxWrite(uint8_t value)
+{
+	switch (BlackboxConfig()->device) {
+#ifdef USE_FLASHFS
+		case BLACKBOX_DEVICE_FLASH:
+			break;
+#endif
+		
+#ifdef USE_SDCARD
+		case BLACKBOX_DEVICE_SDCARD:
+			afatfs_fputc(blackboxSDCard.logFile, value);
+			break;
+#endif
+		
+		case BLACKBOX_DEVICE_SERIAL:
+//			serialWrite(blackboxPort, value);	// TODO: if necessary
+			break;
+	}
+}
+
+/**
+ * If there is data waiting to be written to the blackbox device, attempt to write (a portion of) that now.
+ *
+ * Returns true if all data has been written to the device.
+ */
+bool blackboxDeviceFlushForce(void)
+{
+	switch (BlackboxConfig()->device) {
+		case BLACKBOX_DEVICE_SERIAL:
+			/* Nothing need to speed up flushing on serial, as serial is continuously being drained out of its buffer */
+//			return isSerialTransmitBufferEmpty(blackboxPort);
+		
+#ifdef USE_FLASHFS
+		case BLACKBOX_DEVICE_FLASH:
+//			return flashfsFlushAsync();
+#endif
+		
+#ifdef USE_SDCARD
+		case BLACKBOX_DEVICE_SDCARD:
+			/**
+		     * SD card will flush itself without us calling it, but we need to call flush manually in order to check
+		     * if it's done yet or not!
+		     */
+			return afatfs_flush();
+#endif
+		
+		default:
+			return false;
+	}
+}
+
 /**
  * Call once every loop iteration in order to maintain the global blackboxHeaderBudget with the number of bytes we can transmit this iteration.
  */
@@ -104,6 +156,11 @@ void blackboxReplenishHeaderBudget(void)
 
 #ifdef USE_SDCARD
 
+/**
+ * Callback function to create the log directory.
+ *
+ * Assign the opened directory handle pointer to the blackboxSDCard.logDirectory handle pointer.
+ */
 static void blackboxLogDirCreated(afatfsFilePtr_t directory)
 {
 //	printf("directory addr: 0x%x, %s, %d\r\n", (uint32_t)directory, __FUNCTION__, __LINE__);	// directory addr: 0x20002a34
@@ -122,6 +179,11 @@ static void blackboxLogDirCreated(afatfsFilePtr_t directory)
 	}
 }
 
+/**
+ * Callback function to create the the file.
+ *
+ * Assign the opened file handle pointer to the blackboxSDCard.logFile handle pointer.
+ */
 static void blackboxLogFileCreated(afatfsFilePtr_t file)
 {
 //	printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
@@ -198,6 +260,7 @@ static bool blackboxSDCardBeginLog(void)
 				 * Merge RTC programs later
 				 */
 				afatfs_mkdir("logs", blackboxLogDirCreated);
+
 //				afatfs_mkdir("quadLogs", blackboxLogDirCreated);	// just for testing
 //				afatfs_mkdir("pwcLogs", blackboxLogDirCreated);	// just for testing
 //				afatfs_mkdir("yangLogs", blackboxLogDirCreated);	// just for testing
@@ -214,6 +277,8 @@ static bool blackboxSDCardBeginLog(void)
 //				blackboxCreateLogFile();					// LOG000003.BFL
 //				blackboxCreateLogFile();					// LOG000003.BFL
 //				blackboxCreateLogFile();					// LOG000003.BFL
+
+//				blackboxSDCard.state = BLACKBOX_SDCARD_READY_TO_LOG;
 
 #if 0
 				for (int i = 0; i < 8; i++) {
@@ -312,7 +377,7 @@ static bool blackboxSDCardBeginLog(void)
 //				printf("%s, %s, %d\r\n", __FILE__, __FUNCTION__, __LINE__);
 				
 				goto doMore;
-			}			
+			}
 			break;
 		
 		case BLACKBOX_SDCARD_READY_TO_CREATE_LOG:
@@ -346,4 +411,33 @@ bool blackboxDeviceBeginLog(void)
 		default:
 			return true;
 	}
+}
+
+int blackboxPrint(const char *s)
+{
+	int length;
+	
+	switch (BlackboxConfig()->device) {
+#ifdef USE_FLASHFS
+		case BLACKBOX_DEVICE_FLASH:
+			break;
+#endif
+		
+#ifdef USE_SDCARD
+		case BLACKBOX_DEVICE_SDCARD:
+			length = strlen(s);
+			afatfs_fwrite(blackboxSDCard.logFile, (const uint8_t *)s, length);
+			break;
+#endif
+	}
+}
+
+/**
+ * Helper function just for testing logging purposes.
+ *
+ * Calling afatfs_fclose() function to test whether 'Y' character (from calling blackboxWrite('Y')) is written to the SD Card 
+ */
+bool blackboxStopLogging(void)
+{
+	afatfs_fclose(blackboxSDCard.logFile, NULL);
 }

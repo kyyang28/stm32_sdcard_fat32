@@ -243,8 +243,30 @@ void handleBlackbox(timeUs_t currentTimeUs)
 			/* On entry of this state, xmitState.headerIndex is 0 and startTime is initiallised */
 		
 			/**
-		     * 
+		     * JUST FOR TESTING RIGHT NOW.
+		     * Write a dummy contents to the SDCard and read it.
+		     */
+			blackboxWrite('Y');
+			blackboxWrite('\n');
+			blackboxWrite('A');
+			blackboxWrite('\n');
+			blackboxWrite('N');
+			blackboxWrite('\n');
+			blackboxWrite('G');
+			blackboxWrite('\n');
+//			blackboxPrint("Start of log");
+				
+			if (blackboxDeviceFlushForce()) {
+//				printf("Flush the contents to SDCard successfully!\r\n");
+			}
+			
+			blackboxStopLogging();			
+		
+			/**
+		     * Once the UART has had time to init, transmit the header in chunks so we don't overflow its transmit buffer,
+		     * overflow the OpenLog's buffer, or keep the main loop busy for too long.
 			 */
+			
 			break;
 			
 		default:

@@ -32,8 +32,15 @@ typedef enum BlackboxDevice {
 }BlackboxDevice;
 
 bool blackboxDeviceOpen(void);
+void blackboxWrite(uint8_t value);
+bool blackboxDeviceFlushForce(void);
+
 void blackboxReplenishHeaderBudget(void);
 
 bool blackboxDeviceBeginLog(void);
+
+int blackboxPrint(const char *s);
+
+bool blackboxStopLogging(void);
 
 #endif	// __BLACKBOX_IO_H
