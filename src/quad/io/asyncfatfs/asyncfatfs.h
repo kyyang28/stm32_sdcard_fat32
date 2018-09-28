@@ -62,10 +62,11 @@ void afatfs_poll(void);
 uint32_t afatfs_getFreeBufferSpace(void);
 
 /* API functions */
-bool afatfs_mkdir(const char *filename, afatfsFileCallback_t callback);
-bool afatfs_fclose(afatfsFilePtr_t file, afatfsCallback_t callback);
-bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t complete);
-uint32_t afatfs_fwrite(afatfsFilePtr_t file, const uint8_t *buffer, uint32_t len);
-void afatfs_fputc(afatfsFilePtr_t file, uint8_t c);
+bool afatfs_mkdir(const char *filename, afatfsFileCallback_t callback);						// create directory
+bool afatfs_fopen(const char *filename, const char *mode, afatfsFileCallback_t complete);	// file open
+bool afatfs_fclose(afatfsFilePtr_t file, afatfsCallback_t callback);						// file close
+uint32_t afatfs_fwrite(afatfsFilePtr_t file, const uint8_t *buffer, uint32_t len);			// file write string to SDCard
+void afatfs_fputc(afatfsFilePtr_t file, uint8_t c);											// file write a single character to SDCard
+uint32_t afatfs_fread(afatfsFilePtr_t file, uint8_t *buffer, uint32_t len);					// file read string from SDCard and store it to buffer
 
 #endif	// __ASYNCFATFS_H

@@ -3990,8 +3990,78 @@ void afatfs_fputc(afatfsFilePtr_t file, uint8_t c)
 	}
 }
 
-/* +------------------------------------------------------------------------------------------------------------------------------- */
-/* +------------------------------------------------------------------------------------------------------------------------------- */
+/**
+ * Attempt to read `len` bytes from `file` into the `buffer`.
+ *
+ * Returns the number of bytes actually read.
+ *
+ * 0 will be returned when:
+ *		The filesystem is busy (try again later)
+ *      EOF was reached (check afatfs_isEOF())
+ *
+ * Fewer bytes than requested will be read when:
+ *		The read spans a AFATFS_SECTOR_SIZE boundary and the following sector was not available in the cache yet.
+ */
+uint32_t afatfs_fread(afatfsFilePtr_t file, uint8_t *buffer, uint32_t len)
+{
+	if ((file->mode & AFATFS_FILE_MODE_READ) == 0) {
+		return 0;
+	}
+	
+	if (afatfs_fileIsBusy(file)) {
+		/* There might be a seek pending */
+		return 0;
+	}
+	
+	/**
+	 * If we've just previously fwritten to extend the file, the logical filesize will be out of date and the cursor
+	 * will appear to be beyond the end of the file (but actually it's precisely at the end of the file, because if we had seeked
+	 * backwards to where we could read something with fseek(), we would have updated the filesize).
+	 */
+	if (file->cursorOffset >= file->logicalSize) {
+		return 0;
+	}
+	
+	len = MIN(file->logicalSize - file->cursorOffset, len);
+	
+	uint32_t readBytes = 0;
+	uint32_t cursorOffsetInSector = file->cursorOffset % AFATFS_SECTOR_SIZE;
+	
+	while (len > 0) {
+		uint32_t bytesToReadThisSector = MIN(AFATFS_SECTOR_SIZE - cursorOffsetInSector, len);
+		uint8_t *sectorBuffer;
+		
+		sectorBuffer = afatfs_fileRetainCursorSectorForRead(file);
+		if (!sectorBuffer) {
+			/* Cache is currently busy */
+			return readBytes;
+		}
+		
+		memcpy(buffer, sectorBuffer + cursorOffsetInSector, bytesToReadThisSector);
+		
+		readBytes += bytesToReadThisSector;
+		
+		/**
+		 * If the seek doesn't complete immediately then we'll break and wait for that seek to complete by waiting for 
+		 * the file to be non-busy on entry again.
+		 *
+		 * A seek operation should always be able to queue on the file since we have checked that the file wasn't busy
+		 * on entry (fseek will never return AFATFS_OEPRATION_FAILURE).
+		 */
+		if (afatfs_fseekInternal(file, bytesToReadThisSector, NULL) == AFATFS_OPERATION_IN_PROGRESS) {
+			break;
+		}
+		
+		len -= bytesToReadThisSector;
+		buffer += bytesToReadThisSector;
+		cursorOffsetInSector = 0;
+	}
+	
+	return readBytes;
+}
+
+/* +------------------------------------------------------------------------------------------------------------------------------+ */
+/* +------------------------------------------------------------------------------------------------------------------------------+ */
 /* +--------------------------------------------------------- FUNCTIONS ----------------------------------------------------------+ */
-/* +------------------------------------------------------------------------------------------------------------------------------- */
-/* +------------------------------------------------------------------------------------------------------------------------------- */
+/* +------------------------------------------------------------------------------------------------------------------------------+ */
+/* +------------------------------------------------------------------------------------------------------------------------------+ */

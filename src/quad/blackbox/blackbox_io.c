@@ -92,6 +92,25 @@ void blackboxWrite(uint8_t value)
 	}
 }
 
+void blackboxRead(const char *recvBuffer)
+{
+	switch (BlackboxConfig()->device) {
+#ifdef USE_FLASHFS
+		case BLACKBOX_DEVICE_FLASH:
+			break;
+#endif
+		
+#ifdef USE_SDCARD
+		case BLACKBOX_DEVICE_SDCARD:
+			afatfs_fread(blackboxSDCard.logFile, (uint8_t *)recvBuffer, strlen(recvBuffer));
+			break;
+#endif
+		
+		case BLACKBOX_DEVICE_SERIAL:
+			break;
+	}
+}
+
 /**
  * If there is data waiting to be written to the blackbox device, attempt to write (a portion of) that now.
  *

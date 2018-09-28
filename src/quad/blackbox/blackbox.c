@@ -269,6 +269,11 @@ void handleBlackbox(timeUs_t currentTimeUs)
 			}
 #endif
 			
+			/* TODO: Read SDCard */
+//			const char recvBuff[50];
+//			blackboxRead(recvBuff);
+//			printf("recvBuff: %s, %s, %d\r\n", recvBuff, __FUNCTION__, __LINE__);
+			
 			/** blackboxStopLogging() calling afatfs_fclose(blackboxSDCard.logFile, NULL) to close the file handle just for testing
 			 * otherwise, the programs will keep writing information into card
 			 */
